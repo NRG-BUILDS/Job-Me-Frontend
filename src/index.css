@@ -1,0 +1,267 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Alumni+Sans:ital,wght@0,100..900;1,100..900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Make Google Places suggestions always appear on top */
+.pac-container {
+  z-index: 99999 !important;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 152 74% 43%; /* This is #ff007b (255, 0, 123) */
+    --primary-foreground: 0 0% 100%; /* 349 96% 31%; */
+
+    --secondary: 36 100% 68%;
+    --secondary-foreground: 29 96% 56%;
+
+    --dark: 220 4% 14%; /* This is #222325 */
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --body: 225 4% 40%;
+    --heading: 228 4% 26%;
+    --link: 225 77% 59%;
+
+    --accent: 36 100% 68%;
+    --accent-foreground: 0 0% 0%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 228 3% 72%;
+    --input: 225 4% 40%;
+    --ring: 172 98% 38%;
+
+    --radius: 1rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 338 100% 50%; /* This is #ff007b (255, 0, 123) */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 42% 18%; /* This is #1A1A40 */
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 40 77% 86%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 338 100% 50%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border selection:bg-primary/20 selection:text-primary-foreground;
+  }
+
+  html,
+  body {
+    @apply scroll-smooth text-dark antialiased;
+    font-size: 14px;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
+  }
+
+  body {
+    @apply text-body bg-background;
+    font-family:
+      "Inter",
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Helvetica,
+      Arial,
+      sans-serif,
+      "Apple Color Emoji",
+      "Segoe UI Emoji",
+      "Segoe UI Symbol";
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply text-heading;
+    font-family: "Satoshi", sans-serif;
+  }
+
+  .no-animations * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .compact-mode {
+    --compact-scale: 0.9;
+  }
+
+  .compact-mode .card {
+    padding: 0.75rem !important;
+  }
+
+  .compact-mode h1,
+  .compact-mode h2,
+  .compact-mode h3,
+  .compact-mode h4 {
+    margin-bottom: 0.5rem !important;
+  }
+
+  .compact-mode p {
+    margin-bottom: 0.5rem !important;
+  }
+
+  .compact-mode .space-y-6 {
+    margin-top: 1rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .compact-mode button {
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.35rem !important;
+  }
+
+  .compact-mode .p-6 {
+    padding: 1rem !important;
+  }
+
+  .compact-mode .gap-6 {
+    gap: 1rem !important;
+  }
+
+  .compact-mode .mb-6 {
+    margin-bottom: 1rem !important;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply border border-white/10 bg-white/5 shadow-lg backdrop-blur-xl;
+  }
+
+  .glass-light {
+    @apply border border-black/5 bg-white/90 shadow-lg backdrop-blur-xl;
+  }
+
+  .glass-card {
+    @apply border border-zinc-200/50 bg-white/90 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-black/50;
+  }
+
+  .text-gradient {
+    @apply from-NextNest-purple-500 to-NextNest-purple-700 bg-gradient-to-br bg-clip-text text-transparent;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-muted;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground;
+}
+
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 300ms,
+    transform 300ms;
+}
+
+.page-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition:
+    opacity 300ms,
+    transform 300ms;
+}
+/* CSS variable based so you can change rows with inline style */
+.line-clamp-var {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-line-clamp: var(--lines, 3);
+}
+
+:root {
+  --text-color: #32325d;
+  --placeholder-color: #aab7c4;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-color: #ffffff;
+    --placeholder-color: #aaaaaa;
+  }
+}
