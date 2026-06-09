@@ -1,123 +1,88 @@
-import React, { useState } from "react";
-import { Search, Menu, X, ChevronRight } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Search, Menu, X, ChevronRight, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SkillCard } from "@/components/skills-ui/skill-card";
+import useRequest from "@/hooks/use-request";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Service } from "@/types/service";
 
-// Mock data for categories and services
-const categories = [
-  { id: "plumbing", name: "Plumbing", count: 45, icon: "🔧" },
-  { id: "electrical", name: "Electrical", count: 38, icon: "⚡" },
-  { id: "painting", name: "Painting", count: 52, icon: "🎨" },
-  { id: "carpentry", name: "Carpentry", count: 29, icon: "🪚" },
-  { id: "air-conditioning", name: "Air Conditioning", count: 31, icon: "❄️" },
-  { id: "interior-design", name: "Interior Design", count: 24, icon: "🏠" },
-  { id: "construction", name: "Construction", count: 41, icon: "🏗️" },
-  { id: "tailoring", name: "Tailoring", count: 36, icon: "✂️" },
-  { id: "gardening", name: "Gardening", count: 18, icon: "🌿" },
-  { id: "welding", name: "Welding", count: 15, icon: "🔥" },
-  { id: "cleaning", name: "Cleaning", count: 62, icon: "🧹" },
-  { id: "tiling", name: "Tiling", count: 27, icon: "⬜" },
-  { id: "beauty-services", name: "Beauty Services", count: 48, icon: "💄" },
-  { id: "roofing", name: "Roofing", count: 22, icon: "🏚️" },
-  { id: "catering", name: "Catering", count: 55, icon: "🍽️" },
-  { id: "auto-repair", name: "Auto Repair", count: 34, icon: "🚗" },
-  { id: "it-support", name: "IT Support", count: 43, icon: "💻" },
-  { id: "photography", name: "Photography", count: 39, icon: "📸" },
-  { id: "event-planning", name: "Event Planning", count: 26, icon: "🎉" },
-  { id: "security", name: "Security", count: 19, icon: "🔒" },
-];
-
-const skills = [
-  {
-    id: "1",
-    name: "Adebayo Cooling",
-    title: "Top artisan",
-    description: "I will install your sinks and water closet professionally",
-    rating: 5.0,
-    reviews: 3,
-    avatar: "https://i.pravatar.cc/150?img=32",
-    cover: "https://picsum.photos/seed/adebayo/600/400",
-    category: "plumbing",
-    location: "KANO",
-  },
-  {
-    id: "2",
-    name: "Chinedu Fixit",
-    title: "Expert Technician",
-    description: "Professional AC installation and servicing for homes.",
-    rating: 4.8,
-    reviews: 12,
-    avatar: "https://i.pravatar.cc/150?img=76",
-    cover: "https://picsum.photos/seed/chinedu/600/400",
-    category: "air-conditioning",
-    location: "LAGOS",
-  },
-  {
-    id: "3",
-    name: "Grace Interiors",
-    title: "Creative Designer",
-    description: "Transform your living spaces with modern interior designs.",
-    rating: 4.9,
-    reviews: 8,
-    avatar: "https://i.pravatar.cc/150?img=45",
-    cover: "https://picsum.photos/seed/grace/600/400",
-    category: "interior-design",
-    location: "ABUJA",
-  },
-  {
-    id: "4",
-    name: "Ibrahim Wiring",
-    title: "Certified Electrician",
-    description: "Safe and reliable electrical installations and repairs.",
-    rating: 4.7,
-    reviews: 15,
-    avatar: "https://i.pravatar.cc/150?img=12",
-    cover: "https://picsum.photos/seed/ibrahim/600/400",
-    category: "electrical",
-    location: "IBADAN",
-  },
-  {
-    id: "5",
-    name: "Funmi Paints",
-    title: "Master Painter",
-    description:
-      "Quality painting services for residential and commercial properties.",
-    rating: 4.6,
-    reviews: 20,
-    avatar: "https://i.pravatar.cc/150?img=23",
-    cover: "https://picsum.photos/seed/funmi/600/400",
-    category: "painting",
-    location: "LAGOS",
-  },
-  {
-    id: "6",
-    name: "Emeka Builds",
-    title: "Construction Specialist",
-    description: "Expert bricklaying and building construction services.",
-    rating: 4.9,
-    reviews: 25,
-    avatar: "https://i.pravatar.cc/150?img=33",
-    cover: "https://picsum.photos/seed/emeka/600/400",
-    category: "construction",
-    location: "ENUGU",
-  },
-];
+interface Category {
+  _id: string;
+  name: string;
+  slug: string;
+  icon?: string;
+  description?: string;
+}
 
 const CategoriesPage = () => {
-  const [selectedCategory, setSelectedCategory] = useState("plumbing");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [servicesCache, setServicesCache] = useState<Record<string, Service[]>>({});
+
+  const { makeRequest: fetchCategories, loading: loadingCategories } =
+    useRequest("categories", false);
+  const { makeRequest: fetchServices, loading: loadingServices } = useRequest(
+    "",
+    false
+  );
+
+  useEffect(() => {
+    const getCategories = async () => {
+      try {
+        const res = await fetchCategories();
+        if (res?.categories) {
+          setCategories(res.categories);
+          if (res.categories.length > 0) {
+            setSelectedCategory(res.categories[0].slug);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch categories", err);
+      }
+    };
+    getCategories();
+  }, []);
+
+  useEffect(() => {
+    if (selectedCategory) {
+      if (servicesCache[selectedCategory]) {
+        setServices(servicesCache[selectedCategory]);
+        return;
+      }
+
+      const getServices = async () => {
+        try {
+          const res = await fetchServices(
+            null,
+            "GET",
+            "application/json",
+            `services/category/${selectedCategory}`
+          );
+          const newServices = res?.services || [];
+          setServices(newServices);
+          setServicesCache((prev) => ({
+            ...prev,
+            [selectedCategory]: newServices,
+          }));
+        } catch (err) {
+          console.error("Failed to fetch services", err);
+          setServices([]);
+        }
+      };
+      getServices();
+    }
+  }, [selectedCategory]);
+
   const filteredCategories = categories.filter((cat) =>
-    cat.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    cat.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredServices = skills.filter(
-    (service) => service.category === selectedCategory,
-  );
-
-  const currentCategory = categories.find((cat) => cat.id === selectedCategory);
+  const currentCategory = categories.find((cat) => cat.slug === selectedCategory);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -137,7 +102,11 @@ const CategoriesPage = () => {
               </h1>
             </div>
             <div className="hidden text-sm text-gray-500 md:block">
-              {categories.length} categories available
+              {loadingCategories ? (
+                <Skeleton className="h-5 w-32" />
+              ) : (
+                `${categories.length} categories available`
+              )}
             </div>
           </div>
         </div>
@@ -172,43 +141,54 @@ const CategoriesPage = () => {
               </div>
 
               <div className="max-h-[calc(100vh-16rem)] overflow-y-auto">
-                {filteredCategories.map((category) => (
-                  <button
-                    key={category.id}
-                    onClick={() => {
-                      setSelectedCategory(category.id);
-                      if (window.innerWidth < 1024) {
-                        setIsSidebarOpen(false);
-                      }
-                    }}
-                    className={`flex w-full items-center justify-between border-b p-4 transition-colors hover:bg-gray-50 ${
-                      selectedCategory === category.id
-                        ? "border-l-4 border-l-primary bg-primary/5"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{category.icon}</span>
-                      <div className="text-left">
-                        <p
-                          className={`font-medium ${
-                            selectedCategory === category.id
-                              ? "text-primary"
-                              : "text-gray-900"
-                          }`}
-                        >
-                          {category.name}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {category.count} artisans
-                        </p>
+                {loadingCategories ? (
+                  <div className="p-4 space-y-4">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : filteredCategories.length > 0 ? (
+                  filteredCategories.map((category) => (
+                    <button
+                      key={category._id}
+                      onClick={() => {
+                        setSelectedCategory(category.slug);
+                        if (window.innerWidth < 1024) {
+                          setIsSidebarOpen(false);
+                        }
+                      }}
+                      className={`flex w-full items-center justify-between border-b p-4 transition-colors hover:bg-gray-50 ${
+                        selectedCategory === category.slug
+                          ? "border-l-4 border-l-primary bg-primary/5"
+                          : ""
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {category.icon && (
+                          <span className="text-2xl">{category.icon}</span>
+                        )}
+                        <div className="text-left">
+                          <p
+                            className={`font-medium ${
+                              selectedCategory === category.slug
+                                ? "text-primary"
+                                : "text-gray-900"
+                            }`}
+                          >
+                            {category.name}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    {selectedCategory === category.id && (
-                      <ChevronRight className="text-green-500" size={20} />
-                    )}
-                  </button>
-                ))}
+                      {selectedCategory === category.slug && (
+                        <ChevronRight className="text-green-500" size={20} />
+                      )}
+                    </button>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    No categories found
+                  </div>
+                )}
               </div>
             </div>
           </aside>
@@ -216,21 +196,48 @@ const CategoriesPage = () => {
           {/* Main Content */}
           <main className="flex-1">
             <div className="mb-6">
-              <div className="mb-2 flex items-center gap-3">
-                <span className="text-4xl">{currentCategory?.icon}</span>
-                <h2 className="text-3xl font-bold text-gray-900">
-                  {currentCategory?.name}
-                </h2>
-              </div>
-              <p className="text-gray-600">
-                {currentCategory?.count} artisans available in this category
-              </p>
+              {loadingCategories ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-10 w-64" />
+                  <Skeleton className="h-5 w-48" />
+                </div>
+              ) : (
+                <>
+                  <div className="mb-2 flex items-center gap-3">
+                    {currentCategory?.icon && (
+                      <span className="text-4xl">{currentCategory.icon}</span>
+                    )}
+                    <h2 className="text-3xl font-bold text-gray-900">
+                      {currentCategory?.name || "Select a category"}
+                    </h2>
+                  </div>
+                  {currentCategory?.description && (
+                    <p className="text-gray-600">
+                      {currentCategory.description}
+                    </p>
+                  )}
+                </>
+              )}
             </div>
 
-            {filteredServices.length > 0 ? (
+            {loadingServices ? (
               <div className="grid grid-cols-1 gap-6 md:grid-cols-3 xl:grid-cols-4">
-                {filteredServices.map((service) => (
-                  <SkillCard key={service.id} skill={service} />
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="space-y-4 border p-4 bg-white">
+                    <Skeleton className="aspect-[4/3] w-full bg-gray-200" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <div className="flex items-center gap-2 mt-4">
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : services.length > 0 ? (
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3 xl:grid-cols-4">
+                {services.map((service) => (
+                  <SkillCard key={service._id} skill={service} />
                 ))}
               </div>
             ) : (
@@ -243,15 +250,6 @@ const CategoriesPage = () => {
                   There are currently no artisans in this category. Check back
                   later!
                 </p>
-              </div>
-            )}
-
-            {/* Load More Button */}
-            {filteredServices.length > 0 && (
-              <div className="mt-8 text-center">
-                <Button variant="outline" size="lg">
-                  Load More Services
-                </Button>
               </div>
             )}
           </main>

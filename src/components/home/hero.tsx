@@ -4,18 +4,47 @@ import { Button } from "../ui/button";
 import { ChevronRight, LucideSearch } from "lucide-react";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import useRequest from "@/hooks/use-request";
+import { Skeleton } from "../ui/skeleton";
+
+interface PopularCategory {
+  _id: string;
+  name: string;
+  slug: string;
+  icon: string;
+  serviceCount: number;
+}
 
 const Hero = () => {
   const [searchInput, setSearchInput] = useState("");
+  const [popularCategories, setPopularCategories] = useState<PopularCategory[]>([]);
   const navigate = useNavigate();
+
+  const { makeRequest: fetchPopularCategories, loading: loadingCategories } =
+    useRequest("categories/popular");
+
+  useEffect(() => {
+    const getPopular = async () => {
+      try {
+        const res = await fetchPopularCategories();
+        if (res?.categories) {
+          setPopularCategories(res.categories);
+        }
+      } catch (err) {
+        console.error("Failed to fetch popular categories", err);
+      }
+    };
+    getPopular();
+  }, []);
 
   const handleSearch = () => {
     if (searchInput.trim() !== "") {
       navigate(`/explore?search=${encodeURIComponent(searchInput)}`);
     }
   };
+
   return (
     <section className="relative flex items-center justify-center pt-10 lg:min-h-[70dvh]">
       <div className="max-w-4xl space-y-5 p-6 text-center text-lg">
@@ -51,23 +80,22 @@ const Hero = () => {
         </div>
         <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-2">
           <p>Popular:</p>
-          {[
-            "Architecture",
-            "Mansory",
-            "POP Casting",
-            "Auto Repair",
-            "Furniture",
-          ].map((skill) => (
-            <button
-              key={skill}
-              className="grid place-items-center whitespace-nowrap rounded-full border border-dark px-4 py-1 text-lg hover:border-primary hover:text-primary"
-            >
-              {skill}
-            </button>
-          ))}
+          {loadingCategories ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-9 w-24 rounded-full" />
+            ))
+          ) : (
+            popularCategories.slice(0, 5).map((category) => (
+              <Link key={category._id} to={`/categories/${category.slug}`}>
+                <button className="grid place-items-center whitespace-nowrap rounded-full border border-dark px-4 py-1 text-lg hover:border-primary hover:text-primary">
+                  {category.name}
+                </button>
+              </Link>
+            ))
+          )}
           <Link to={"/categories"}>
             <button className="flex place-items-center whitespace-nowrap rounded-full border border-secondary bg-secondary px-4 py-1 text-lg font-medium text-heading">
-              +35 More Categories
+              More Categories
               <ChevronRight />
             </button>
           </Link>

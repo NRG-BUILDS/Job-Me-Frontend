@@ -71,40 +71,55 @@ export default function ArtisanDashboard() {
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-semibold text-gray-900">
-                  Earnings & expenses
+                  Bookings
                 </h3>
                 <Info className="h-4 w-4 text-gray-400" />
+                <Select defaultValue="since-joining">
+                  <SelectTrigger className="border-0 p-0 text-xs text-gray-600 hover:text-gray-900">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="since-joining">Since joining</SelectItem>
+                    <SelectItem value="this-month">This month</SelectItem>
+                    <SelectItem value="last-month">Last month</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Select defaultValue="since-joining">
-                <SelectTrigger className="h-8 w-32 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="since-joining">Since joining</SelectItem>
-                  <SelectItem value="this-month">This month</SelectItem>
-                  <SelectItem value="last-month">Last month</SelectItem>
-                </SelectContent>
-              </Select>
+              <Link to="/artisan/bookings">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-auto border-input bg-transparent p-2 py-1.5 text-sm font-normal"
+                >
+                  Manage Bookings
+                  <ChevronRight className="opacity-50" />
+                </Button>
+              </Link>
             </div>
             <div className="mb-6">
               <div className="mb-2 flex items-center gap-2">
-                <span className="text-xs text-gray-600">Earnings to date</span>
+                <span className="text-xs text-gray-600">Total bookings</span>
                 <Info className="h-4 w-4 text-gray-400" />
               </div>
-              <p className="text-2xl font-bold text-gray-900">₦0.00</p>
-              <p className="mt-1 text-xs text-gray-500">
-                Your earnings since joining.
-              </p>
+              <p className="text-2xl font-bold text-gray-900">0</p>
             </div>
-            <div>
-              <div className="mb-2 flex items-center gap-2">
-                <span className="text-xs text-gray-600">Expenses to date</span>
-                <Info className="h-4 w-4 text-gray-400" />
+            <div className="grid grid-cols-2">
+              <div>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="text-xs text-gray-600">
+                    Pending bookings
+                  </span>
+                  <Info className="h-4 w-4 text-gray-400" />
+                </div>
+                <p className="text-2xl font-bold text-gray-900">0</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">₦0.00</p>
-              <p className="mt-1 text-xs text-gray-500">
-                Earnings spent on purchases since joining.
-              </p>
+              <div>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="text-xs text-gray-600">Active bookings</span>
+                  <Info className="h-4 w-4 text-gray-400" />
+                </div>
+                <p className="text-2xl font-bold text-gray-900">0</p>
+              </div>
             </div>
           </div>
           {/* Future Payments */}
