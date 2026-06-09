@@ -7,10 +7,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Settings } from "lucide-react";
+import { Plus, Settings, Wrench } from "lucide-react";
 import { Link } from "react-router-dom";
 import useRequest from "@/hooks/use-request";
 import { Service } from "@/types/service";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 
 export default function SkillsDashboard() {
   const [activeFilter, setActiveFilter] = useState("active-0");
@@ -158,48 +166,68 @@ export default function SkillsDashboard() {
               </div>
 
               <div className="grid grid-cols-3 gap-6">
-                {services.map((service) => (
-                  <div
-                    key={service._id}
-                    className="rounded-lg border border-gray-200 p-4"
-                  >
-                    {/* Service Images */}
-                    <div className="mb-4 flex gap-2">
-                      {service.gallery.map((img, idx) => (
-                        <div
-                          key={idx}
-                          className="h-20 w-20 overflow-hidden rounded-lg bg-gray-200"
-                          style={{
-                            backgroundImage: `url(${img.url})`,
-                            backgroundSize: "cover",
-                            backgroundPosition: "center",
-                          }}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Service Info */}
-                    <div className="mb-4">
-                      <div className="mb-2 font-semibold text-heading">
-                        <span className="">In </span>
-                        <span className={`${service.category.icon}`}>
-                          {service.category.name}
-                        </span>
-                      </div>
-                      <p className="line-clamp-3 min-h-16 text-sm text-gray-700">
-                        {service.description}
-                      </p>
-                    </div>
-
-                    {/* Edit Button */}
-                    <Button
-                      variant="outline"
-                      className="w-full border-link text-link hover:bg-link/5"
+                {services?.length > 0 ? (
+                  services.map((service) => (
+                    <div
+                      key={service._id}
+                      className="rounded-lg border border-gray-200 p-4"
                     >
-                      Edit Service
-                    </Button>
-                  </div>
-                ))}
+                      {/* Service Images */}
+                      <div className="mb-4 flex gap-2">
+                        {service.gallery.map(
+                          (img, idx) =>
+                            idx < 3 && (
+                              <div
+                                key={idx}
+                                className="h-20 w-20 overflow-hidden rounded-lg bg-gray-200"
+                                style={{
+                                  backgroundImage: `url(${img.url})`,
+                                  backgroundSize: "cover",
+                                  backgroundPosition: "center",
+                                }}
+                              />
+                            ),
+                        )}
+                      </div>
+
+                      {/* Service Info */}
+                      <div className="mb-4">
+                        <div className="mb-2 font-semibold text-heading">
+                          <span className="">In </span>
+                          <span className={`${service.category.icon}`}>
+                            {service.category.name}
+                          </span>
+                        </div>
+                        <p className="line-clamp-3 min-h-16 text-sm text-gray-700">
+                          {service.description}
+                        </p>
+                      </div>
+
+                      {/* Edit Button */}
+                      <Link to={`/artisan/skills/edit/${service._id}`}>
+                        <Button
+                          variant="outline"
+                          className="w-full border-link text-link hover:bg-link/5"
+                        >
+                          Edit Service
+                        </Button>
+                      </Link>
+                    </div>
+                  ))
+                ) : (
+                  <Empty className="col-span-3">
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon">
+                        <Wrench />
+                      </EmptyMedia>
+                      <EmptyTitle>No Services Yet</EmptyTitle>
+                      <EmptyDescription>
+                        You haven&apos;t created any services yet. Get started
+                        by creating your first service.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
+                )}
               </div>
             </div>
 

@@ -1,10 +1,15 @@
 import { Link } from "react-router-dom";
 import { SkillCard } from "../skills-ui/skill-card";
 import { ReactNode } from "react";
+import { Service } from "@/types/service";
+import { Info } from "lucide-react";
+import { Skeleton } from "../ui/skeleton";
 
 interface Props {
   title?: ReactNode | string;
   id?: string;
+  services: Service[];
+  loading: boolean;
 }
 export const skills = [
   {
@@ -350,20 +355,34 @@ export const skills = [
   },
 ];
 
-export function Section({ title, id }: Props) {
+export function Section({ title, id, services, loading }: Props) {
   return (
     <section id={id || undefined} className="px-1 py-6 md:px-12">
       <div className="">
         {title && (
           <h2 className="mb-3 text-3xl font-extrabold xl:mb-6">{title}</h2>
         )}
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:gap-4 xl:grid-cols-5">
-          {skills.map((skill, index) => (
-            <Link to={`/service/${id}`}>
-              <SkillCard key={index} skill={skill} />
-            </Link>
-          ))}
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:gap-4 xl:grid-cols-5">
+          {loading &&
+            [...Array(8)].map((_, index) => (
+              <Skeleton key={index} className="h-72 w-full" />
+            ))}
         </div>
+        {!loading && services?.length === 0 && (
+          <div className="flex h-96 items-center justify-center text-muted-foreground">
+            <Info size={20} className="mr-2" />
+            No services found
+          </div>
+        )}
+        {services?.length > 0 && !loading && (
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:gap-4 xl:grid-cols-5">
+            {services?.map((service, index) => (
+              <Link to={`/service/${service._id}`} key={index}>
+                <SkillCard skill={service} />
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

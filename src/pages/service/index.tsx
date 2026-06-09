@@ -7,10 +7,23 @@ import {
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Image } from "@/components/ui/image";
 import ScrollToTop from "@/hooks/scroll-to-top";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  MessageCircleMore,
+  Star,
+} from "lucide-react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   Accordion,
@@ -19,6 +32,9 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import SendFirstMessage from "./send-message";
+import useRequest from "@/hooks/use-request";
+import { ServiceDetails } from "@/types/service";
+import ReviewType from "@/types/reviews";
 
 const ServicePage = () => {
   const { id } = useParams();
@@ -26,9 +42,31 @@ const ServicePage = () => {
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
   const [sendMessageModal, setSendMessageModal] = useState(false);
-  const navigate = useNavigate();
+  const { makeRequest, loading, error } = useRequest(`services/service/${id}`);
+
+  const [service, setService] = useState<ServiceDetails | null>(null);
+
+  const [reviews, setReviews] = useState<ReviewType[]>([]);
+
+  const {
+    makeRequest: getReviews,
+    loading: getReviewsLoading,
+    error: getReviewsError,
+  } = useRequest(`reviews/${id}`);
 
   useEffect(() => {
+    makeRequest()
+      .then((res) => setService(res.service))
+      .catch((err) => {
+        setService(null);
+      });
+    getReviews()
+      .then((res) => setReviews(res.reviews))
+      .catch((err) => {
+        setReviews([]);
+      });
+  }, [id]);
+  useLayoutEffect(() => {
     if (!api) return;
 
     setCount(api.scrollSnapList().length);
@@ -39,10 +77,6 @@ const ServicePage = () => {
     });
   }, [api]);
   ScrollToTop();
-
-  const handleBookClick = (i: number) => {
-    navigate(`/service/${id}/book`, { state: { i } });
-  };
 
   const [activeSection, setActiveSection] = useState("overview");
 
@@ -98,6 +132,9 @@ const ServicePage = () => {
     }
   };
 
+  if (loading) return <ServicePageSkeleton />;
+  if (error || !service) return <p>Error loading service</p>;
+
   return (
     <section className="relative">
       <nav className="sticky top-16 z-50 border-b border-gray-200 bg-white shadow-sm">
@@ -122,21 +159,26 @@ const ServicePage = () => {
           id="overview"
           className="col-span-full space-y-2 px-4 font-medium lg:p-0"
         >
-          <div className="text-link flex items-center gap-1 text-sm">
-            <span>Auto Repair</span>
-            <ChevronRight className="text-border" /> <span>Auto Cooling </span>
+          <div className="flex items-center gap-1 text-sm text-link">
+            <span>{service.category.name}</span>
+            <ChevronRight className="text-border" />{" "}
+            <span>
+              {
+                service.category.subcategories.find(
+                  (cat) => cat.slug === service.subcategory,
+                ).name
+              }
+            </span>
           </div>
-          <h1 className="text-3xl font-bold">
-            I will install your sinks and water closet professionally
-          </h1>
+          <h1 className="text-3xl font-bold">{service.title}</h1>
           <div className="flex items-start gap-3 lg:items-center">
             <div className="mt-1 size-8 overflow-clip rounded-full bg-blue-400 lg:mt-0">
               <Image src="" />
             </div>
             <div className="flex flex-wrap items-center gap-x-2 font-semibold">
-              <span className="font-medium">airb123</span>
+              <span className="font-medium">{service.artisan.username}</span>
               <span className="text-primary">Level 2 Artisan</span>
-              <StarRating rating={4} showRating />
+              <StarRating rating={service.rating_average} showRating />
             </div>
           </div>
         </div>
@@ -147,12 +189,9 @@ const ServicePage = () => {
               className="aspect-video w-full overflow-clip lg:rounded-xl"
             >
               <CarouselContent>
-                {[...Array(3)].map((_, index) => (
+                {service.gallery.map((image, index) => (
                   <CarouselItem key={index}>
-                    <Image
-                      src="https://www.apprenticeship.ng/wp-content/uploads/2020/03/hairdresser-attribution-in-picassa.jpg"
-                      alt="Hairdresser"
-                    />
+                    <Image src={image.url} alt="Hairdresser" />
                   </CarouselItem>
                 ))}
               </CarouselContent>
@@ -191,23 +230,7 @@ const ServicePage = () => {
           <section id="description" className="px-4 py-5 lg:px-0">
             <h2 className="mb-2 text-xl font-bold lg:mb-4">Description</h2>
             <div className="space-y-4">
-              <p>
-                Lorem ipsum, dolor sit amet consectetur adipisicing elit. Modi
-                doloribus repudiandae corrupti illo, nesciunt sed! Est ea culpa
-                totam numquam, atque voluptatibus voluptate magnam commodi
-                architecto, non illum, sunt praesentium?
-              </p>
-              <p>
-                Lorem ipsum, dolor sit amet consectetur adipisicing elit. Modi
-                doloribus repudiandae corrupti illo, nesciunt sed! Est ea culpa
-                totam numquam, atque voluptatibus voluptate magnam commodi
-                architecto, non illum, sunt praesentium?
-              </p>
-              <p>
-                Lorem ipsum, dolor sit amet consectetur adipisicing elit. Modi
-                doloribus repudiandae corrupti illo, nesciunt sed! Est ea culpa
-                totam numquam.
-              </p>
+              <p>{service.description}</p>
             </div>
           </section>
           <section id="about-artisan" className="px-4 py-5 lg:px-0">
@@ -217,12 +240,14 @@ const ServicePage = () => {
                 <Image src="" />
               </div>
               <div className="grid gap-1">
-                <p className="font-bold">Adebayo Cooling</p>
+                <p className="font-bold">
+                  {service.artisan.first_name + " " + service.artisan.last_name}
+                </p>
                 <p>Auto Repair Specialist</p>
                 <div className="flex items-center gap-1">
-                  <StarRating rating={3.9} showRating />
+                  <StarRating rating={service.rating_average} showRating />
                   <div className="font-medium">
-                    <span>(39)</span>
+                    <span>({service.rating_average})</span>
                   </div>
                 </div>
                 <div className="mt-5">
@@ -256,15 +281,19 @@ const ServicePage = () => {
                 </div>
               </div>
               <div className="space-y-3">
-                <p>12, Adamu Musa Street, Epetun, Lagos Island</p>
+                <p>
+                  {service.artisan.profile?.city +
+                    ", " +
+                    service.artisan.profile?.state}
+                </p>
 
-                <p>0703 354 0006, 0905 223 446</p>
+                <p>{service.artisan.profile?.phone_number}</p>
 
                 <Link
-                  to={"mailto:ajanlekok@salon.de"}
+                  to={`mailto:${service.artisan.email}`}
                   className="block hover:underline"
                 >
-                  ajanlekok@salon.de
+                  {service.artisan.email}
                 </Link>
               </div>
             </div>
@@ -279,61 +308,40 @@ const ServicePage = () => {
                 className="w-full"
                 defaultValue="item-1"
               >
-                <AccordionItem value="item-1">
-                  <AccordionTrigger>
-                    Do you work on AC for buses too?
-                  </AccordionTrigger>
-                  <AccordionContent className="flex flex-col gap-4 text-balance">
-                    <p>Yes we do offer services for all vehicle types</p>
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-2">
-                  <AccordionTrigger>
-                    How fast in expected time of delivery
-                  </AccordionTrigger>
-                  <AccordionContent className="flex flex-col gap-4 text-balance">
-                    <p>
-                      All orders are carefully handled. We claim between 2 to 3
-                      days on work
-                    </p>
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="item-3">
-                  <AccordionTrigger>Return Policy</AccordionTrigger>
-                  <AccordionContent className="flex flex-col gap-4 text-balance">
-                    <p>
-                      We stand behind our products with a comprehensive 30-day
-                      return policy. If you&apos;re not completely satisfied,
-                      simply return the item in its original condition.
-                    </p>
-                    <p>
-                      Our hassle-free return process includes free return
-                      shipping and full refunds processed within 48 hours of
-                      receiving the returned item.
-                    </p>
-                  </AccordionContent>
-                </AccordionItem>
+                {service.faq.map((faq, index) => (
+                  <AccordionItem key={index} value={`item-${index + 1}`}>
+                    <AccordionTrigger>{faq.question}</AccordionTrigger>
+                    <AccordionContent className="flex flex-col gap-4 text-balance">
+                      <p>{faq.answer}</p>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
               </Accordion>
             </div>
           </section>
           <section id="reviews">
-            <ServiceReviews />
+            <ServiceReviews
+              loading={getReviewsLoading}
+              error={getReviewsError}
+              reviews={reviews}
+              ratingAverage={service.rating_average}
+              totalReviews={service.reviews_count}
+            />
           </section>
         </div>
         <div className="w-full items-start justify-end space-y-5 px-4 lg:col-span-5 lg:flex lg:p-0">
           <section className="sticky top-10 w-full max-w-[415px] space-y-6 border border-border text-lg">
             <div className="grid grid-cols-3 divide-x border-b border-border bg-muted font-bold">
-              <button className="size-full bg-white p-5 text-primary hover:bg-muted">
-                Offering
-              </button>
-              <button className="size-full p-5 hover:bg-muted">Offering</button>
+              <div className="size-full bg-white p-5 py-3 text-primary hover:bg-muted">
+                Offerings
+              </div>
             </div>
             <div className="p-5 pt-0">
               <div className="divide-y *:flex *:items-center *:justify-between *:py-5">
-                {Array.from({ length: 5 }).map((_, i) => (
+                {service.offerings.map((o, i) => (
                   <div key={i} className="font-medium">
-                    <p>AC Servicing</p>
-                    <span>₦20,000</span>
+                    <p>{o.title}</p>
+                    <span>₦{o.price}</span>
                   </div>
                 ))}
               </div>
@@ -343,7 +351,7 @@ const ServicePage = () => {
                   className="w-full"
                   size="lg"
                 >
-                  Send a Message
+                  Place an Order
                 </Button>
 
                 <Button
@@ -362,6 +370,10 @@ const ServicePage = () => {
       <SendFirstMessage
         open={sendMessageModal}
         onChange={setSendMessageModal}
+        artisanId={service.artisan._id}
+        offerings={service.offerings}
+        serviceId={service._id}
+        serviceTitle={service.title}
       />
     </section>
   );
@@ -369,70 +381,25 @@ const ServicePage = () => {
 
 export default ServicePage;
 
-const ServiceReviews = () => {
-  // Sample reviews data
-  const reviews = [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      rating: 5,
-      date: "2024-01-15",
-      review:
-        "Absolutely fantastic service! The team was professional, timely, and exceeded all my expectations. I couldn't be happier with the results and would definitely recommend to anyone looking for quality work.",
-    },
-    {
-      id: 2,
-      name: "Mike Chen",
-      rating: 4,
-      date: "2024-01-12",
-      review:
-        "Great experience overall. The service was delivered on time and met most of my requirements. There were a few minor issues but nothing that couldn't be resolved quickly.",
-    },
-    {
-      id: 3,
-      name: "Emily Rodriguez",
-      rating: 5,
-      date: "2024-01-10",
-      review:
-        "Outstanding quality and attention to detail. The communication throughout the process was excellent, and the final result was exactly what I was hoping for.",
-    },
-    {
-      id: 4,
-      name: "David Thompson",
-      rating: 3,
-      date: "2024-01-08",
-      review:
-        "Decent service, though there's room for improvement. The work was completed satisfactorily but took longer than expected. Customer service was responsive when issues arose.",
-    },
-    {
-      id: 5,
-      name: "Lisa Park",
-      rating: 5,
-      date: "2024-01-05",
-      review:
-        "Exceptional service from start to finish! Professional, reliable, and the quality exceeded my expectations. Will definitely be using this service again.",
-    },
-    {
-      id: 6,
-      name: "James Wilson",
-      rating: 4,
-      date: "2024-01-03",
-      review:
-        "Very satisfied with the service provided. The team was knowledgeable and helpful throughout the process. Minor delays but overall a positive experience.",
-    },
-  ];
-
+const ServiceReviews = ({
+  reviews,
+  loading,
+  error,
+  ratingAverage,
+  totalReviews,
+}: {
+  reviews: ReviewType[];
+  loading: boolean;
+  error: string | null;
+  ratingAverage: number;
+  totalReviews: number;
+}) => {
   // Calculate rating distribution
   const ratingCounts = reviews.reduce((acc, review) => {
     acc[review.rating] = (acc[review.rating] || 0) + 1;
     return acc;
   }, {});
 
-  const totalReviews = reviews.length;
-  const averageRating =
-    reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews;
-
-  // Progress bar for rating distribution
   const RatingDistribution = () => {
     return (
       <div className="mb-6 rounded-lg border bg-white p-6 shadow-sm">
@@ -442,9 +409,9 @@ const ServiceReviews = () => {
               Customer Reviews
             </h3>
             <div className="mt-1 flex items-center gap-2">
-              <StarRating rating={Math.round(averageRating)} size="w-5 h-5" />
+              <StarRating rating={Math.round(ratingAverage)} size="w-5 h-5" />
               <span className="text-lg font-medium text-gray-900">
-                {averageRating.toFixed(1)}
+                {ratingAverage.toFixed(1)}
               </span>
               <span className="text-gray-500">({totalReviews} reviews)</span>
             </div>
@@ -481,8 +448,8 @@ const ServiceReviews = () => {
   };
 
   // Individual review component
-  const ReviewCard = ({ review }) => {
-    const formatDate = (dateString) => {
+  const ReviewCard = ({ review }: { review: ReviewType }) => {
+    const formatDate = (dateString: string) => {
       const date = new Date(dateString);
       return date.toLocaleDateString("en-US", {
         year: "numeric",
@@ -496,14 +463,17 @@ const ServiceReviews = () => {
         <div className="mb-3 flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 font-medium text-white">
-              {review.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
+              {review.reviewer.first_name[0] +
+                " " +
+                review.reviewer.last_name[0]}
             </div>
             <div>
-              <h4 className="font-medium text-gray-900">{review.name}</h4>
-              <p className="text-sm text-gray-500">{formatDate(review.date)}</p>
+              <h4 className="font-medium text-gray-900">
+                {review.reviewer.username}
+              </h4>
+              <p className="text-sm text-gray-500">
+                {formatDate(review.updated_at)}
+              </p>
             </div>
           </div>
           <StarRating rating={review.rating} />
@@ -520,11 +490,162 @@ const ServiceReviews = () => {
       <div className="space-y-4">
         <h3 className="text-xl font-semibold text-gray-900">Recent Reviews</h3>
         <div className="divide-y">
-          {reviews.map((review) => (
-            <ReviewCard key={review.id} review={review} />
-          ))}
+          {reviews.length > 0 ? (
+            reviews.map((review) => (
+              <ReviewCard key={review.reviewer._id} review={review} />
+            ))
+          ) : (
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <MessageCircleMore />
+                </EmptyMedia>
+                <EmptyTitle>No Reviews on the Service Yet</EmptyTitle>
+                <EmptyDescription>
+                  There are no reviews for this service yet. Place a booking and
+                  be the first to review it.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          )}
         </div>
       </div>
     </div>
+  );
+};
+
+import { Skeleton } from "@/components/ui/skeleton";
+
+const ServicePageSkeleton = () => {
+  return (
+    <section className="relative">
+      {/* Sticky Nav */}
+      <nav className="sticky top-16 z-50 border-b border-gray-200 bg-white shadow-sm">
+        <div className="mx-auto flex space-x-8 overflow-x-auto px-4 md:max-w-screen-2xl md:px-12">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-24 rounded-none" />
+          ))}
+        </div>
+      </nav>
+
+      <div className="mx-auto grid max-w-screen-xl gap-x-20 gap-y-4 p-0 lg:grid-cols-12 lg:p-6 xl:px-12">
+        {/* Header */}
+        <div className="col-span-full space-y-3 px-4 lg:p-0">
+          <Skeleton className="h-4 w-64" />
+          <Skeleton className="h-8 w-2/3" />
+
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-8 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          </div>
+        </div>
+
+        {/* LEFT COLUMN */}
+        <div className="space-y-6 lg:col-span-7">
+          {/* Carousel */}
+          <Skeleton className="aspect-video w-full lg:rounded-xl" />
+
+          {/* Description */}
+          <section className="space-y-3 px-4 py-5 lg:px-0">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+          </section>
+
+          {/* About Artisan */}
+          <section className="space-y-6 px-4 py-5 lg:px-0">
+            <Skeleton className="h-6 w-48" />
+
+            <div className="flex items-start gap-6">
+              <Skeleton className="size-24 rounded-full" />
+
+              <div className="w-full space-y-3">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="mt-4 h-10 w-40" />
+              </div>
+            </div>
+
+            <div className="space-y-4 rounded border p-4 lg:p-6">
+              <div className="grid grid-cols-2 gap-4">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-52" />
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+            </div>
+          </section>
+
+          {/* FAQs */}
+          <section className="space-y-4 px-4 py-5 lg:px-0">
+            <Skeleton className="h-6 w-32" />
+
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-5 w-full" />
+                <Skeleton className="h-4 w-11/12" />
+              </div>
+            ))}
+          </section>
+
+          {/* Reviews */}
+          <section className="space-y-4 px-4 py-5 lg:px-0">
+            <Skeleton className="h-6 w-40" />
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+              </div>
+            ))}
+          </section>
+        </div>
+
+        {/* RIGHT COLUMN */}
+        <div className="w-full items-start justify-end space-y-5 px-4 lg:col-span-5 lg:flex lg:p-0">
+          <section className="sticky top-10 w-full max-w-[415px] space-y-6 border border-border">
+            {/* Tabs */}
+            <div className="grid grid-cols-3 divide-x border-b">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-14 w-full" />
+              ))}
+            </div>
+
+            <div className="space-y-6 p-5 pt-0">
+              {/* Offerings */}
+              <div className="divide-y">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between py-5"
+                  >
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                ))}
+              </div>
+
+              {/* Buttons */}
+              <div className="space-y-3">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="mx-auto h-5 w-40" />
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
   );
 };

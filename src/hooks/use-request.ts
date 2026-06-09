@@ -179,7 +179,9 @@ const useRequest = <T = any>(
       options.body =
         contentType === "application/json"
           ? JSON.stringify(requestData)
-          : convertToFormData(requestData);
+          : requestData instanceof FormData
+            ? requestData
+            : convertToFormData(requestData);
     }
 
     return fetch(`${BASE_URL}${requestUrl}`, options);

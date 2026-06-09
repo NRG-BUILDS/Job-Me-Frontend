@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { ChevronRight, Play, Info, Trash2, Upload } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ChevronRight, Play, Info, Trash2, Upload, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -10,10 +10,40 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import useCategories from "@/hooks/useCategories";
+import { useParams, useNavigate } from "react-router-dom";
+import useRequest from "@/hooks/use-request";
+import { toast } from "sonner";
 
 const CreateSkillsForm = () => {
+  const { categories, fetchCategories, catLoading } = useCategories();
+  const { id } = useParams<{ id: string }>();
+  const isEditMode = Boolean(id);
+  const navigate = useNavigate();
+
+  const { makeRequest: fetchService, loading: fetchLoading } = useRequest(`services/${id}`, true);
+  const { makeRequest: saveService, loading: saveLoading } = useRequest(
+    isEditMode ? `services/update-service/${id}` : "services/create-service",
+    true
+  );
+
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    serviceTitle: string;
+    category: string;
+    subcategory: string;
+    searchTags: string;
+    offerings: Array<{ title: string; price: string }>;
+    description: string;
+    faq: Array<{ question: string; answer: string }>;
+    gallery: any[];
+    requirements: {
+      ninSlip: File | null;
+      proofOfMembership: File | null;
+      utilityBill: File | null;
+      email: string;
+    };
+  }>({
     serviceTitle: "",
     category: "",
     subcategory: "",
@@ -29,6 +59,62 @@ const CreateSkillsForm = () => {
       email: "",
     },
   });
+
+  const [existingVerificationDocs, setExistingVerificationDocs] = useState<{
+    ninSlip: string | null;
+    proofOfMembership: string | null;
+    utilityBill: string | null;
+  }>({
+    ninSlip: null,
+    proofOfMembership: null,
+    utilityBill: null,
+  });
+
+  const selectedCategoryObj = categories.find((c) => c.id === formData.category);
+  const subcategories = selectedCategoryObj?.subcategories || [];
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    if (isEditMode && id) {
+      fetchService()
+        .then((res) => {
+          if (res && res.service) {
+            const s = res.service;
+            setFormData({
+              serviceTitle: s.title || "",
+              category: s.category?._id || s.category || "",
+              subcategory: s.subcategory || "",
+              searchTags: s.search_tags?.join(", ") || "",
+              offerings: s.offerings?.map((o: any) => ({
+                title: o.title,
+                price: String(o.price),
+              })) || [],
+              description: s.description || "",
+              faq: s.faq || [],
+              gallery: s.gallery || [],
+              requirements: {
+                ninSlip: null,
+                proofOfMembership: null,
+                utilityBill: null,
+                email: s.verification_docs?.contact_email || "",
+              },
+            });
+            setExistingVerificationDocs({
+              ninSlip: s.verification_docs?.nin_slip || null,
+              proofOfMembership: s.verification_docs?.proof_of_membership || null,
+              utilityBill: s.verification_docs?.utility_bill || null,
+            });
+          }
+        })
+        .catch((err) => {
+          toast.error("Failed to load service details");
+          console.error(err);
+        });
+    }
+  }, [id, isEditMode]);
 
   const steps = [
     { num: 1, label: "Overview", active: true },
@@ -122,6 +208,91 @@ const CreateSkillsForm = () => {
     }));
   };
 
+  const handleSubmit = async () => {
+    // Validate required fields
+    if (!formData.serviceTitle.trim()) {
+      toast.error("Service title is required");
+      return;
+    }
+    if (!formData.category) {
+      toast.error("Category is required");
+      return;
+    }
+    if (!formData.description.trim()) {
+      toast.error("Description is required");
+      return;
+    }
+    if (formData.offerings.length === 0) {
+      toast.error("At least one offering is required");
+      return;
+    }
+    const invalidOffering = formData.offerings.find((o) => !o.title.trim() || !o.price.trim() || isNaN(Number(o.price)));
+    if (invalidOffering) {
+      toast.error("All offerings must have a title and a valid price");
+      return;
+    }
+
+    try {
+      const searchTagsArray = formData.searchTags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+
+      const newFiles = formData.gallery.filter((item) => item instanceof File);
+      const existingGallery = formData.gallery.filter((item) => !(item instanceof File));
+
+      const fd = new FormData();
+      fd.append("title", formData.serviceTitle);
+      fd.append("category", formData.category);
+      fd.append("subcategory", formData.subcategory || "");
+      fd.append("description", formData.description);
+      fd.append("offerings", JSON.stringify(formData.offerings.map((o) => ({
+        title: o.title,
+        price: Number(o.price) || 0,
+      }))));
+      fd.append("faq", JSON.stringify(formData.faq));
+      fd.append("search_tags", JSON.stringify(searchTagsArray));
+      fd.append("gallery", JSON.stringify(existingGallery));
+
+      // Append files to gallery field
+      newFiles.forEach((file) => {
+        fd.append("gallery", file);
+      });
+
+      // Verification docs (primitives and existing URLs)
+      const verificationDocsObj = {
+        contact_email: formData.requirements.email,
+        nin_slip: existingVerificationDocs.ninSlip,
+        proof_of_membership: existingVerificationDocs.proofOfMembership,
+        utility_bill: existingVerificationDocs.utilityBill,
+      };
+      fd.append("verification_docs", JSON.stringify(verificationDocsObj));
+
+      // Append files to separate fields
+      if (formData.requirements.ninSlip instanceof File) {
+        fd.append("nin_slip", formData.requirements.ninSlip);
+      }
+      if (formData.requirements.proofOfMembership instanceof File) {
+        fd.append("proof_of_membership", formData.requirements.proofOfMembership);
+      }
+      if (formData.requirements.utilityBill instanceof File) {
+        fd.append("utility_bill", formData.requirements.utilityBill);
+      }
+
+      const res = await saveService(fd, isEditMode ? "PATCH" : "POST", "multipart/form-data");
+      
+      if (res && res.status >= 200 && res.status < 300) {
+        toast.success(isEditMode ? "Service updated successfully" : "Service published successfully");
+        setCurrentStep(7);
+      } else {
+        toast.error(res?.message || "Failed to save service");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "An error occurred while saving the service");
+      console.error(err);
+    }
+  };
+
   const nextStep = () => {
     if (currentStep < 6) setCurrentStep(currentStep + 1);
   };
@@ -133,6 +304,14 @@ const CreateSkillsForm = () => {
   const goToStep = (step) => {
     setCurrentStep(step);
   };
+
+  if (catLoading || (isEditMode && fetchLoading)) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -232,24 +411,14 @@ const CreateSkillsForm = () => {
                               <SelectValue placeholder="SELECT A CATEGORY" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="graphics">
-                                Graphics & Design
-                              </SelectItem>
-                              <SelectItem value="digital">
-                                Digital Marketing
-                              </SelectItem>
-                              <SelectItem value="writing">
-                                Writing & Translation
-                              </SelectItem>
-                              <SelectItem value="video">
-                                Video & Animation
-                              </SelectItem>
-                              <SelectItem value="music">
-                                Music & Audio
-                              </SelectItem>
-                              <SelectItem value="programming">
-                                Programming & Tech
-                              </SelectItem>
+                              {categories?.map((category) => (
+                                <SelectItem
+                                  key={category.id}
+                                  value={category.id}
+                                >
+                                  {category.name}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <Select
@@ -262,12 +431,14 @@ const CreateSkillsForm = () => {
                               <SelectValue placeholder="SELECT A SUBCATEGORY" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="sub1">
-                                Subcategory 1
-                              </SelectItem>
-                              <SelectItem value="sub2">
-                                Subcategory 2
-                              </SelectItem>
+                              {subcategories.map((subcategory) => (
+                                <SelectItem
+                                  key={subcategory.slug}
+                                  value={subcategory.slug}
+                                >
+                                  {subcategory.name}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -515,21 +686,54 @@ const CreateSkillsForm = () => {
                         </label>
                         {formData.gallery.length > 0 && (
                           <div className="mt-4 grid grid-cols-3 gap-4">
-                            {formData.gallery.map((file, i) => (
-                              <div key={i} className="group relative">
-                                <div className="aspect-square rounded-lg bg-gray-100 p-2">
-                                  <p className="truncate text-xs">
-                                    {file.name}
-                                  </p>
+                            {formData.gallery.map((file, i) => {
+                              const isNewFile = file instanceof File;
+                              const isImage = isNewFile 
+                                ? file.type.startsWith("image/") 
+                                : file.media_type === "image" || (file.url && !file.url.endsWith(".mp4"));
+                              
+                              return (
+                                <div key={i} className="group relative">
+                                  <div className="aspect-square overflow-hidden rounded-lg bg-gray-100 border flex items-center justify-center">
+                                    {isNewFile ? (
+                                      isImage ? (
+                                        <img
+                                          src={URL.createObjectURL(file)}
+                                          alt="Preview"
+                                          className="h-full w-full object-cover"
+                                          onLoad={(e) => URL.revokeObjectURL((e.target as any).src)}
+                                        />
+                                      ) : (
+                                        <div className="flex flex-col items-center justify-center p-2 text-center">
+                                          <Play className="h-6 w-6 text-gray-400 mb-1" />
+                                          <p className="truncate text-xs max-w-full px-1">{file.name}</p>
+                                        </div>
+                                      )
+                                    ) : (
+                                      isImage ? (
+                                        <img
+                                          src={file.url}
+                                          alt="Existing gallery"
+                                          className="h-full w-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="flex flex-col items-center justify-center p-2 text-center">
+                                          <Play className="h-6 w-6 text-gray-400 mb-1" fill="currentColor" />
+                                          <p className="truncate text-[10px] text-gray-500">Video clip</p>
+                                        </div>
+                                      )
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() => removeGalleryItem(i)}
+                                    className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 shadow"
+                                    type="button"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
                                 </div>
-                                <button
-                                  onClick={() => removeGalleryItem(i)}
-                                  className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                                >
-                                  <Trash2 size={12} />
-                                </button>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -586,8 +790,14 @@ const CreateSkillsForm = () => {
                                     className="w-full cursor-pointer"
                                     placeholder="NO FILE CHOSEN"
                                     value={
-                                      formData.requirements[doc.field]?.name ||
-                                      ""
+                                      (() => {
+                                        const reqVal = formData.requirements[doc.field as keyof typeof formData.requirements];
+                                        return (reqVal instanceof File ? reqVal.name : "") ||
+                                          (existingVerificationDocs[doc.field as keyof typeof existingVerificationDocs]
+                                            ? "Uploaded document (click to change)"
+                                            : "") ||
+                                          "NO FILE CHOSEN";
+                                      })()
                                     }
                                     readOnly
                                   />
@@ -762,6 +972,7 @@ const CreateSkillsForm = () => {
                                 </span>
                                 <span className="col-span-2 text-gray-600">
                                   {formData.requirements.ninSlip?.name ||
+                                    (existingVerificationDocs.ninSlip ? "Existing document loaded" : "") ||
                                     "Not uploaded"}
                                 </span>
                               </div>
@@ -770,8 +981,9 @@ const CreateSkillsForm = () => {
                                   Membership Proof:
                                 </span>
                                 <span className="col-span-2 text-gray-600">
-                                  {formData.requirements.proofOfMembership
-                                    ?.name || "Not uploaded"}
+                                  {formData.requirements.proofOfMembership?.name ||
+                                    (existingVerificationDocs.proofOfMembership ? "Existing document loaded" : "") ||
+                                    "Not uploaded"}
                                 </span>
                               </div>
                               <div className="grid grid-cols-3 gap-2">
@@ -780,6 +992,7 @@ const CreateSkillsForm = () => {
                                 </span>
                                 <span className="col-span-2 text-gray-600">
                                   {formData.requirements.utilityBill?.name ||
+                                    (existingVerificationDocs.utilityBill ? "Existing document loaded" : "") ||
                                     "Not uploaded"}
                                 </span>
                               </div>
@@ -795,14 +1008,20 @@ const CreateSkillsForm = () => {
                             </div>
                           </div>
 
-                          <button
-                            className="w-full rounded-lg bg-green-500 py-3 font-semibold text-white transition-colors hover:bg-green-600"
-                            onClick={() => {
-                              setCurrentStep(7);
-                            }}
+                          <Button
+                            className="w-full rounded-lg bg-green-500 py-6 text-base font-semibold text-white transition-colors hover:bg-green-600 flex items-center justify-center gap-2"
+                            onClick={handleSubmit}
+                            disabled={saveLoading}
                           >
-                            Publish Service
-                          </button>
+                            {saveLoading ? (
+                              <>
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                {isEditMode ? "Saving Changes..." : "Publishing Service..."}
+                              </>
+                            ) : (
+                              isEditMode ? "Save Changes" : "Publish Service"
+                            )}
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -821,26 +1040,26 @@ const CreateSkillsForm = () => {
                       >
                         <rect width="336" height="336" fill="white" />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M152.075 129.112C151.355 128.105 149.542 127.149 147.954 127.227C146.367 127.306 144.872 127.962 143.448 128.66C144.536 129.453 145.759 130.063 147.051 130.456C147.459 130.581 148.384 130.947 150.379 130.123"
                           fill="#E7EAEE"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M40.9274 238.592C5.34058e-05 183.062 109.636 168.127 174.761 125.497C210.249 102.268 226.48 76.8559 257.152 77.546C319.857 78.9567 322.422 197.403 309.107 218.681C258.897 298.914 57.8675 261.576 40.9274 238.592Z"
                           fill="#FFB33E"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M170.688 163.381C184.365 163.381 198.281 164.674 210.556 170.808C212.003 171.531 213.672 172.875 213.15 174.423C212.954 175.004 212.476 175.434 212 175.814C206.438 180.258 199.045 181.387 192.007 182.185C189.273 182.495 186.535 182.779 183.793 183.008C162.033 184.831 139.998 183.231 118.716 178.284C117.463 177.993 116.004 177.497 115.656 176.242C115.233 174.717 116.763 173.414 118.117 172.624C128.601 166.513 140.581 163.065 152.667 162.682C150.517 163.017 181.279 163.46 170.688 163.381Z"
                           fill="white"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M249.158 119.964C246.335 125.647 243.975 131.669 243.325 137.99C243.297 138.262 243.275 138.553 243.402 138.795C243.657 139.286 244.333 139.31 244.881 139.274C257.592 138.437 270.729 140.938 281.513 147.768C285.199 150.102 288.584 152.915 292.407 155.015C292.576 155.107 292.768 155.201 292.952 155.147C293.138 155.093 293.25 154.908 293.344 154.737C295.667 150.514 297.724 146.143 299.5 141.658C300.13 140.069 300.73 138.441 300.886 136.736C301.279 132.446 298.456 128.067 294.405 126.684C284.023 123.14 273.641 119.595 263.258 116.051C261.361 115.403 259.437 114.75 257.439 114.605C255.44 114.461 253.324 114.879 251.783 116.169C250.597 117.162 249.848 118.575 249.158 119.964Z"
                           fill="white"
                         />
@@ -857,8 +1076,8 @@ const CreateSkillsForm = () => {
                           fill="white"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M167.819 0.302302C167.609 0.3609 167.276 0.321043 167.309 0.105059C167.435 0.0404503 167.576 -0.0260287 167.713 0.0103021C167.849 0.0466328 167.938 0.244568 167.828 0.333585L167.819 0.302302Z"
                           fill="#00160A"
                         />
@@ -871,8 +1090,8 @@ const CreateSkillsForm = () => {
                           fill="#00160A"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M292.359 125.181C294.749 125.997 297.237 126.875 298.985 128.71C301.175 131.008 301.805 134.469 301.379 137.626C300.952 140.782 299.602 143.726 298.268 146.615C296.761 149.88 295.254 153.145 293.746 156.41C288.777 154.002 284.504 150.368 279.751 147.551C269.382 141.406 256.996 139.358 244.979 139.924C243.968 139.972 242.654 139.828 242.406 138.84C242.332 138.546 242.381 138.236 242.432 137.937C243.592 131.187 245.85 124.63 249.089 118.606C249.569 117.714 250.078 116.822 250.777 116.09C252.39 114.399 254.853 113.757 257.179 113.86C259.504 113.963 261.745 114.723 263.949 115.476C273.419 118.711 282.889 121.946 292.359 125.181ZM249.158 119.964C246.335 125.647 243.975 131.669 243.325 137.99C243.297 138.262 243.275 138.553 243.402 138.795C243.657 139.286 244.333 139.31 244.881 139.274C257.592 138.437 270.729 140.938 281.513 147.768C285.198 150.102 288.584 152.915 292.407 155.015C292.576 155.107 292.768 155.201 292.952 155.147C293.138 155.093 293.25 154.908 293.344 154.737C295.666 150.514 297.724 146.143 299.5 141.658C300.13 140.069 300.73 138.441 300.886 136.736C301.279 132.446 298.456 128.067 294.405 126.684C284.023 123.14 273.64 119.596 263.258 116.051C261.36 115.403 259.437 114.75 257.439 114.605C255.44 114.461 253.324 114.879 251.783 116.169C250.597 117.162 249.848 118.575 249.158 119.964Z"
                           fill="#00160A"
                         />
@@ -885,106 +1104,112 @@ const CreateSkillsForm = () => {
                           fill="white"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M174.349 232.386C171.626 232.201 168.903 232.017 166.18 231.832C162.425 231.578 158.658 231.322 154.965 230.604C152.386 230.102 149.853 229.376 147.403 228.437C147.136 228.334 146.858 228.221 146.68 228C146.338 227.579 146.508 226.915 146.904 226.543C147.3 226.171 147.853 226.021 148.384 225.893C159.607 223.188 171.39 224.929 182.756 226.964C183.617 227.118 184.503 227.284 185.235 227.757C185.966 228.231 186.511 229.096 186.335 229.943C186.127 230.937 185.072 231.504 184.095 231.817C180.98 232.818 177.617 232.607 174.349 232.386M147.149 227.667C155.981 230.685 165.478 231.068 174.815 231.423C177.107 231.51 179.401 231.597 181.694 231.539C182.599 231.517 183.583 231.441 184.256 230.842C184.929 230.242 184.969 228.933 184.13 228.596C179.254 226.638 173.897 226.276 168.645 225.947C162.394 225.555 156.072 225.18 149.903 226.248C148.847 226.431 147.673 226.743 147.149 227.667Z"
                           fill="#00160A"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M281.634 190.461C282.172 187.486 282.459 184.465 282.49 181.441C282.538 176.798 281.984 172.154 282.246 167.518C282.508 162.883 283.687 158.105 286.72 154.61C286.442 156.534 285.843 158.41 284.955 160.136C283.209 163.532 283.149 167.523 283.128 171.348C283.096 177.233 283.063 183.119 283.031 189.004C283.021 190.799 281.792 192.441 280.208 193.263C278.625 194.085 276.752 194.182 274.994 193.895C273.597 193.667 272.248 193.212 270.906 192.759C262.955 190.074 255.003 187.39 247.051 184.705C246.412 184.489 245.658 184.132 245.612 183.454C244.912 173.175 244.873 162.851 245.494 152.567C245.762 148.142 246.354 143.286 249.588 140.281C248.607 142.365 247.62 144.462 247.017 146.687C246.224 149.612 246.115 152.676 246.011 155.707C245.694 164.879 245.38 174.095 246.455 183.209C246.506 183.642 246.657 184.179 247.086 184.236C250.626 184.706 254.018 185.933 257.379 187.153C262.035 188.843 266.692 190.533 271.349 192.224C272.482 192.635 273.631 193.049 274.83 193.152C276.547 193.299 278.246 192.8 279.898 192.306C280.389 192.159 280.912 191.991 281.23 191.587C281.478 191.271 281.562 190.858 281.634 190.461Z"
                           fill="#00160A"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M274.176 195.386C267.119 194.932 260.584 191.795 253.829 189.748C251.454 189.028 249.039 188.441 246.626 187.854C245.057 187.473 243.489 187.091 241.92 186.71C244.987 185.924 248.205 186.915 251.213 187.896C258.867 190.393 266.522 192.889 274.176 195.386Z"
                           fill="#00160A"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M149.558 127.506C149.79 127.513 149.998 127.546 150.33 127.626L152.251 128.128C152.354 128.155 152.45 128.179 152.534 128.2C152.654 128.231 152.727 128.352 152.697 128.472C152.666 128.592 152.545 128.665 152.425 128.635L151.733 128.457L150.427 128.111L150.329 128.087C149.961 127.994 149.762 127.961 149.543 127.954L149.488 127.955C149.081 127.969 147.165 128.158 145.929 128.239C145.805 128.247 145.698 128.153 145.69 128.03C145.682 127.906 145.776 127.8 145.899 127.792L146.367 127.759C147.597 127.666 149.211 127.509 149.53 127.506L149.558 127.506Z"
                           fill="#00160A"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M149.296 126.711C149.388 126.628 149.53 126.636 149.613 126.728L150.337 127.535C150.419 127.627 150.412 127.768 150.319 127.851C150.227 127.934 150.086 127.926 150.003 127.834L149.279 127.027C149.197 126.935 149.204 126.793 149.296 126.711Z"
                           fill="#00160A"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M150.281 127.528C150.381 127.601 150.403 127.741 150.331 127.841L149.657 128.77C149.585 128.871 149.444 128.893 149.344 128.82C149.244 128.748 149.222 128.608 149.294 128.508L149.968 127.578C150.041 127.478 150.181 127.455 150.281 127.528Z"
                           fill="#00160A"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M146.734 127.027C146.792 126.917 146.928 126.875 147.037 126.933L148.193 127.544C148.302 127.602 148.344 127.737 148.286 127.847C148.229 127.956 148.093 127.998 147.984 127.94L146.828 127.329C146.719 127.272 146.677 127.136 146.734 127.027Z"
                           fill="#00160A"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M148.188 127.625C148.267 127.72 148.255 127.861 148.16 127.941L146.969 128.939C146.874 129.019 146.733 129.006 146.653 128.912C146.574 128.817 146.586 128.676 146.681 128.596L147.872 127.597C147.967 127.518 148.108 127.53 148.188 127.625Z"
                           fill="#00160A"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M158.641 166.081C158.277 165.939 158.378 165.406 158.543 165.055C159.013 164.058 159.482 163.06 159.952 162.063C160.04 161.875 160.13 161.662 160.055 161.469C159.975 161.264 159.745 161.168 159.537 161.092C158.401 160.68 157.265 160.268 156.129 159.856C154.668 162.784 153.918 166.058 153.96 169.324C153.967 169.828 154.006 170.37 154.326 170.763C154.566 171.057 154.929 171.221 155.284 171.361C157.8 172.35 160.603 172.606 163.259 172.089C164.339 171.879 165.524 171.432 165.939 170.421C166.184 169.823 166.102 169.149 166.016 168.509C165.691 166.082 165.365 163.655 165.04 161.228C165.003 160.955 164.958 160.665 164.772 160.46C164.538 160.203 164.153 160.16 163.804 160.137C163.182 160.098 162.543 160.073 161.949 160.263C161.356 160.453 160.81 160.901 160.678 161.505C160.32 163.146 159.622 164.713 158.641 166.081Z"
                           fill="#E7EAEE"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M156.044 159.588C157.195 159.392 158.427 159.727 159.314 160.479C159.575 160.7 160.003 160.585 160.228 160.329C160.453 160.072 160.527 159.722 160.593 159.389C161.189 156.387 161.785 153.385 162.381 150.383C162.482 149.875 162.528 149.231 162.083 148.958C161.926 148.862 161.735 148.836 161.551 148.814C159.761 148.591 157.971 148.369 156.181 148.146C155.955 148.118 155.682 148.11 155.551 148.294C155.472 148.407 155.475 148.555 155.483 148.693C155.696 152.335 156.653 155.99 156.044 159.588Z"
                           fill="white"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M166.977 147.975C165.848 148.678 164.456 148.955 163.14 148.739C162.855 151.931 162.304 155.1 161.494 158.203C161.332 158.823 161.16 159.472 161.312 160.093C162.163 159.472 163.324 159.294 164.324 159.63C164.539 159.703 164.775 159.542 164.868 159.337C164.961 159.132 164.949 158.899 164.941 158.674C164.811 155.035 166.216 151.538 166.977 147.975Z"
                           fill="white"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M157.036 147.391C158.707 147.816 160.42 148.077 162.143 148.169C162.424 148.184 162.531 147.754 162.346 147.544C162.162 147.333 161.851 147.297 161.571 147.276C160.057 147.16 158.514 147.045 157.036 147.391Z"
                           fill="white"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M163.247 148.287C164.181 148.238 165.109 148.078 166.005 147.811C166.187 147.757 166.293 147.53 166.216 147.358C165.522 147.365 164.827 147.371 164.133 147.377C163.846 147.38 163.536 147.389 163.307 147.561C163.078 147.732 163.007 148.131 163.247 148.287"
                           fill="white"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M168.105 113.933C167.822 114.898 167.94 115.992 168.508 116.825C169.076 117.657 170.111 118.183 171.118 118.059C172.657 117.869 173.631 116.401 174.692 115.279C175.267 114.671 175.919 114.136 176.628 113.689C173.981 113.397 171.232 114.126 169.087 115.69C168.838 115.252 169.249 114.721 169.695 114.482C170.141 114.244 170.681 114.101 170.958 113.681C171.168 113.363 171.174 112.956 171.131 112.579C170.985 111.288 170.335 110.06 169.346 109.208C169.097 109.32 169.184 109.682 169.258 109.944C169.64 111.303 168.503 112.578 168.105 113.933Z"
                           fill="#FFB61D"
                         />
                         <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
                           d="M174.349 113.03C174.481 113 174.624 112.962 174.704 112.854C174.849 112.658 174.694 112.384 174.52 112.213C173.945 111.641 173.111 111.335 172.299 111.396C171.955 111.422 171.523 111.759 171.755 112.011C171.946 112.219 171.817 112.546 171.712 112.807C171.607 113.069 171.587 113.453 171.856 113.546C171.957 113.581 172.069 113.557 172.173 113.533C172.899 113.365 173.624 113.198 174.349 113.03Z"
                           fill="#FFB61D"
                         />
                       </svg>
                     </div>
-                    <div className="mx-auto max-w-lg">
+                    <div className="mx-auto max-w-lg pb-10">
                       <h2 className="text-4xl font-bold">
-                        Your service is under review.
+                        {isEditMode ? "Your changes are saved." : "Your service is under review."}
                       </h2>
-                      <p className="mt-2 text-sm">
-                        We are still reviewing your service. We will notify you
-                        when our review is complete and your service is ready to
-                        publish. Good job.
+                      <p className="mt-2 text-sm mb-6 text-gray-500">
+                        {isEditMode 
+                          ? "We are currently reviewing your updated service details. You can track its status in your dashboard." 
+                          : "We are still reviewing your service. We will notify you when our review is complete and your service is ready to publish. Good job."}
                       </p>
+                      <Button 
+                        onClick={() => navigate("/artisan/skills")}
+                        className="bg-primary hover:bg-primary/95 text-white font-semibold py-2 px-6 rounded-lg transition-all"
+                      >
+                        Go to Dashboard
+                      </Button>
                     </div>
                   </div>
                 )}

@@ -14,8 +14,8 @@ import ProfilePage from "./pages/profile";
 import SetAppointment from "./pages/service/send-message";
 import ProfileLayout from "./pages/profile/layout";
 import ArtisanDashboard from "./pages/artisan/dashboard";
-import SkillsDashboard from "./pages/artisan/skills/skills";
-import CreateSkillsForm from "./pages/artisan/skills/create";
+import SkillsDashboard from "./pages/artisan/services/services-dashboard";
+import CreateSkillsForm from "./pages/artisan/services/create";
 import CategoriesPage from "./pages/categories/categories";
 
 const App = () => {
@@ -39,6 +39,10 @@ const App = () => {
           <Route path="/artisan/dashboard" element={<ArtisanDashboard />} />
           <Route path="/artisan/skills" element={<SkillsDashboard />} />
           <Route path="/artisan/skills/new" element={<CreateSkillsForm />} />
+          <Route
+            path="/artisan/skills/edit/:id"
+            element={<CreateSkillsForm />}
+          />
         </Route>
 
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

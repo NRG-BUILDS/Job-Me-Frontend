@@ -75,10 +75,14 @@ export function Navbar() {
         href: "/chats",
         icon: <MessageSquareText />,
       },
-    { label: "Orders", href: "/contact", icon: <Phone /> },
+    { label: "Orders", href: "/profile/orders", icon: <Phone /> },
 
     { label: "Profile", href: "/profile", icon: <User2 /> },
-    { label: "Login", href: "/auth/login", icon: <LogIn /> },
+    !isAuthenticated && {
+      label: "Login",
+      href: "/auth/login",
+      icon: <LogIn />,
+    },
     ,
   ].filter(Boolean);
 

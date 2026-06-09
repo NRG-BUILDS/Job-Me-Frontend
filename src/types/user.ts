@@ -1,7 +1,10 @@
 export type User = {
+  _id: string;
   email: string;
   username: string | null;
   is_artisan: boolean;
+  first_name: string;
+  last_name: string;
 };
 export interface UserProfile {
   id: number;

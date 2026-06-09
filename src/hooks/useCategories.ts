@@ -1,9 +1,19 @@
 import { useEffect, useState } from "react";
-import apartment from "../assets/property-type-images/apartment-example.jpg";
 import useRequest from "./use-request";
-export type Categories = {
+
+export type Subcategory = {
+  _id?: string;
   name: string;
+  slug: string;
+};
+
+export type Categories = {
+  _id: string;
   id: string;
+  name: string;
+  icon?: string;
+  slug: string;
+  subcategories: Subcategory[];
 };
 
 const useCategories = () => {
@@ -12,15 +22,19 @@ const useCategories = () => {
     makeRequest,
     loading: catLoading,
     error: catError,
-  } = useRequest("business/category", false);
+  } = useRequest("categories", false);
 
   const fetchCategories = async () => {
     makeRequest()
       .then((res) => {
         if (res.status === 200) {
-          const data = res.result.map((category: Categories) => ({
+          const data = res.categories.map((category: any) => ({
+            _id: category._id,
+            id: category._id,
             name: category.name,
-            id: category.id,
+            icon: category.icon || "",
+            slug: category.slug,
+            subcategories: category.subcategories || [],
           }));
           setCategories(data);
         }
