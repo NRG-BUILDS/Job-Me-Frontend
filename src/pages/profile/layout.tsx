@@ -1,6 +1,6 @@
-// ChatLayout.jsx
 import { useState, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 import ProfileTabs from "./tab-list";
 import ProfilePage from ".";
@@ -25,23 +25,74 @@ import { toast } from "sonner";
 
 const useIsMobile = () => window.innerWidth < 768;
 
+/** Sub-page titles shown in the mobile back-bar */
+const PAGE_TITLES: Record<string, string> = {
+  "/profile/manage": "Account",
+  "/profile/orders": "Orders",
+  "/profile/support": "Support",
+};
+
+/** Wraps a mobile sub-page with a sticky back-nav header */
+function MobileSubPageWrapper({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const title = PAGE_TITLES[location.pathname] ?? "";
+
+  return (
+    <div className="flex min-h-screen flex-col bg-[#f5f5f5]">
+      {/* Back header */}
+      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-white px-4 py-3">
+        <button
+          onClick={() => navigate("/profile", { replace: true })}
+          className="rounded-full p-1 hover:bg-muted"
+          aria-label="Go back"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <h2 className="text-base font-semibold text-heading">{title}</h2>
+      </div>
+      {/* Page content */}
+      <div className="flex-1">{children}</div>
+    </div>
+  );
+}
+
 export default function ProfileLayout() {
   const [isMobile, setIsMobile] = useState(useIsMobile());
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
-  const { data, makeRequest, loading } = useRequest("users/get-profile");
+  const { data, makeRequest } = useRequest("users/get-profile");
   const {
     makeRequest: completeProfileRequest,
     loading: completeProfileLoading,
   } = useRequest("users/create-profile");
-  const routes = [
+
+  // Mobile: index → tab list; sub-pages wrap with back-nav header
+  const mobileRoutes = [
     {
       path: "/",
-      component: isMobile ? (
-        <ProfileTabs profileData={data?.profile} />
-      ) : (
-        <ProfilePage profileData={data?.profile} />
+      component: <ProfileTabs profileData={data?.profile} />,
+    },
+    {
+      path: "/manage",
+      component: (
+        <MobileSubPageWrapper>
+          <ProfilePage profileData={data?.profile} />
+        </MobileSubPageWrapper>
       ),
     },
+    {
+      path: "/orders",
+      component: (
+        <MobileSubPageWrapper>
+          <OrdersPage />
+        </MobileSubPageWrapper>
+      ),
+    },
+  ];
+
+  // Desktop: sidebar always shows tabs; index shows profile page directly
+  const desktopRoutes = [
+    { path: "/", component: <ProfilePage profileData={data?.profile} /> },
     { path: "/manage", component: <ProfilePage profileData={data?.profile} /> },
     { path: "/orders", component: <OrdersPage /> },
   ];
@@ -53,41 +104,30 @@ export default function ProfileLayout() {
   }, []);
 
   useEffect(() => {
-    makeRequest()
-      .then((res) => console.log(res))
-      .catch((err) => {
-        console.log(err);
-        if (err?.status === 404 || err?.response?.status === 404) {
-          setShowCompleteProfile(true);
-        }
-      });
+    makeRequest().catch((err: any) => {
+      if (err?.status === 404 || err?.response?.status === 404) {
+        setShowCompleteProfile(true);
+      }
+    });
   }, []);
 
-  const handleCompleteProfile = async (data: any) => {
-    await completeProfileRequest(data, "POST").then(
-      (res) => {
-        console.log(res);
-        toast("Profile updated successfully");
-      },
-      (err) => {
-        console.log(err);
-        toast("Failed to update profile");
-      },
+  const handleCompleteProfile = async (formData: any) => {
+    await completeProfileRequest(formData, "POST").then(
+      () => toast("Profile updated successfully"),
+      () => toast("Failed to update profile"),
     );
   };
 
   const formContent = (
-    <>
-      <div className="mt-6">
-        <CompleteProfileForm
-          isLoading={completeProfileLoading}
-          onSubmit={async (data) => {
-            await handleCompleteProfile(data);
-            setShowCompleteProfile(false);
-          }}
-        />
-      </div>
-    </>
+    <div className="mt-6">
+      <CompleteProfileForm
+        isLoading={completeProfileLoading}
+        onSubmit={async (formData) => {
+          await handleCompleteProfile(formData);
+          setShowCompleteProfile(false);
+        }}
+      />
+    </div>
   );
 
   const completeProfileSheet = isMobile ? (
@@ -119,11 +159,12 @@ export default function ProfileLayout() {
     </Dialog>
   );
 
+  /* ── Mobile: full-screen pages navigated via tab list ───────────────────── */
   if (isMobile) {
     return (
       <>
         <Routes>
-          {routes.map((route, index) => (
+          {mobileRoutes.map((route, index) => (
             <Route key={index} path={route.path} element={route.component} />
           ))}
         </Routes>
@@ -132,20 +173,20 @@ export default function ProfileLayout() {
     );
   }
 
-  // Desktop layout: show both side by side
+  /* ── Desktop: sidebar + content area side-by-side ──────────────────────── */
   return (
     <main className="relative bg-[#f5f5f5] p-6">
-      <div className="relative mx-auto flex h-full min-h-screen max-w-7xl flex-none items-start gap-10 *:transition-all *:duration-500">
-        <div className="grid gap-6 lg:grid-cols-12">
+      <div className="relative mx-auto w-full max-w-7xl">
+        <div className="grid w-full gap-6 lg:grid-cols-12">
           <div className="relative h-full lg:col-span-3">
             <div className="sticky top-16">
               <ProfileTabs profileData={data?.profile} />
             </div>
           </div>
-          <div className={`w-full overflow-clip lg:col-span-9`}>
+          <div className="w-full overflow-clip lg:col-span-9">
             <Routes>
-              {routes.map((route) => (
-                <Route path={route.path} element={route.component} />
+              {desktopRoutes.map((route, index) => (
+                <Route key={index} path={route.path} element={route.component} />
               ))}
             </Routes>
           </div>

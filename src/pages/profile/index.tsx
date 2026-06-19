@@ -56,9 +56,32 @@ export default function ProfileSettings({
     // Reset form data if needed
   };
 
+  /** Shared row: label above input on mobile, label right-aligned beside input on sm+ */
+  const FormRow = ({
+    label,
+    htmlFor,
+    children,
+    helper,
+  }: {
+    label: React.ReactNode;
+    htmlFor?: string;
+    children: React.ReactNode;
+    helper?: React.ReactNode;
+  }) => (
+    <div className="grid grid-cols-1 items-start gap-1.5 sm:grid-cols-4 sm:gap-4">
+      <div className="sm:pt-2 sm:text-right">
+        <Label htmlFor={htmlFor} className="font-medium text-gray-700">
+          {label}
+        </Label>
+        {helper && <p className="mt-1 text-xs text-gray-500">{helper}</p>}
+      </div>
+      <div className="sm:col-span-3">{children}</div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen">
-      <div className="mx-auto max-w-4xl rounded border border-border/50 bg-white p-8 shadow-sm">
+      <div className="mx-auto max-w-4xl rounded border border-border/50 bg-white p-4 shadow-sm sm:p-8">
         {/* Header */}
         <div className="flex justify-end">
           <div className="mb-6 text-sm text-gray-600">
@@ -70,121 +93,69 @@ export default function ProfileSettings({
         </div>
 
         {/* Profile Form */}
-        <div className="mb-8 space-y-6">
-          {/* Full Name */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label
-              htmlFor="fullName"
-              className="text-right font-medium text-gray-700"
-            >
-              FULL NAME
-            </Label>
-            <div className="col-span-3">
-              <Input
-                id="fullName"
-                value={formData.fullName}
-                onChange={(e) =>
-                  setFormData({ ...formData, fullName: e.target.value })
-                }
-                disabled={!isEditing}
-                className="w-full disabled:cursor-default disabled:opacity-100"
-              />
-            </div>
-          </div>
+        <div className="mb-8 space-y-5">
+          <FormRow label="FULL NAME" htmlFor="fullName">
+            <Input
+              id="fullName"
+              value={formData.fullName}
+              onChange={(e) =>
+                setFormData({ ...formData, fullName: e.target.value })
+              }
+              disabled={!isEditing}
+              className="w-full disabled:cursor-default disabled:opacity-100"
+            />
+          </FormRow>
 
-          {/* Email */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label
-              htmlFor="email"
-              className="text-right font-medium text-gray-700"
-            >
-              EMAIL
-            </Label>
-            <div className="col-span-3">
-              <Input
-                id="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                disabled={!isEditing}
-                className="w-full disabled:cursor-default disabled:opacity-100"
-              />
-            </div>
-          </div>
+          <FormRow label="EMAIL" htmlFor="email">
+            <Input
+              id="email"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+              disabled={!isEditing}
+              className="w-full disabled:cursor-default disabled:opacity-100"
+            />
+          </FormRow>
 
-          {/* Phone Number */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label
-              htmlFor="phone_number"
-              className="text-right font-medium text-gray-700"
-            >
-              PHONE NUMBER
-            </Label>
-            <div className="col-span-3">
-              <Input
-                id="phone_number"
-                value={formData.phone_number}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone_number: e.target.value })
-                }
-                disabled={!isEditing}
-                className="w-full disabled:cursor-default disabled:opacity-100"
-              />
-            </div>
-          </div>
+          <FormRow label="PHONE NUMBER" htmlFor="phone_number">
+            <Input
+              id="phone_number"
+              value={formData.phone_number}
+              onChange={(e) =>
+                setFormData({ ...formData, phone_number: e.target.value })
+              }
+              disabled={!isEditing}
+              className="w-full disabled:cursor-default disabled:opacity-100"
+            />
+          </FormRow>
 
-          {/* Street Address */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label
-              htmlFor="street"
-              className="text-right font-medium text-gray-700"
-            >
-              STREET ADDRESS
-            </Label>
-            <div className="col-span-3">
-              <Input
-                id="street"
-                value={formData.street}
-                onChange={(e) =>
-                  setFormData({ ...formData, street: e.target.value })
-                }
-                disabled={!isEditing}
-                className="w-full disabled:cursor-default disabled:opacity-100"
-              />
-            </div>
-          </div>
+          <FormRow label="STREET ADDRESS" htmlFor="street">
+            <Input
+              id="street"
+              value={formData.street}
+              onChange={(e) =>
+                setFormData({ ...formData, street: e.target.value })
+              }
+              disabled={!isEditing}
+              className="w-full disabled:cursor-default disabled:opacity-100"
+            />
+          </FormRow>
 
-          {/* City */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label
-              htmlFor="city"
-              className="text-right font-medium text-gray-700"
-            >
-              CITY
-            </Label>
-            <div className="col-span-3">
-              <Input
-                id="city"
-                value={formData.city}
-                onChange={(e) =>
-                  setFormData({ ...formData, city: e.target.value })
-                }
-                disabled={!isEditing}
-                className="w-full disabled:cursor-default disabled:opacity-100"
-              />
-            </div>
-          </div>
+          <FormRow label="CITY" htmlFor="city">
+            <Input
+              id="city"
+              value={formData.city}
+              onChange={(e) =>
+                setFormData({ ...formData, city: e.target.value })
+              }
+              disabled={!isEditing}
+              className="w-full disabled:cursor-default disabled:opacity-100"
+            />
+          </FormRow>
 
-          {/* State & Country */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label
-              htmlFor="state"
-              className="text-right font-medium text-gray-700"
-            >
-              STATE / PROVINCE
-            </Label>
-            <div className="col-span-3 grid grid-cols-2 gap-4">
+          <FormRow label="STATE / PROVINCE" htmlFor="state">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Input
                 id="state"
                 placeholder="State"
@@ -206,41 +177,36 @@ export default function ProfileSettings({
                 className="w-full disabled:cursor-default disabled:opacity-100"
               />
             </div>
-          </div>
+          </FormRow>
 
-          {/* Online Status */}
-          <div className="grid grid-cols-4 items-start gap-4">
-            <div className="text-right">
-              <Label className="flex items-center justify-end gap-2 font-medium text-gray-700">
+          <FormRow
+            label={
+              <span className="flex items-center gap-2 sm:justify-end">
                 ONLINE STATUS
-                <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-              </Label>
-              <p className="mt-1 text-xs text-gray-500">
-                When online, your Gigs are visible under the Online search
-                filter.
-              </p>
-            </div>
-            <div className="col-span-3">
-              <Select
-                value={formData.onlineStatus}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, onlineStatus: value })
-                }
-                disabled={!isEditing}
-              >
-                <SelectTrigger className="w-full disabled:cursor-default disabled:opacity-100">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="GO OFFLINE FOR...">
-                    GO OFFLINE FOR...
-                  </SelectItem>
-                  <SelectItem value="online">Online</SelectItem>
-                  <SelectItem value="offline">Offline</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+                <span className="h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500" />
+              </span>
+            }
+            helper="When online, your Gigs are visible under the Online search filter."
+          >
+            <Select
+              value={formData.onlineStatus}
+              onValueChange={(value) =>
+                setFormData({ ...formData, onlineStatus: value })
+              }
+              disabled={!isEditing}
+            >
+              <SelectTrigger className="w-full disabled:cursor-default disabled:opacity-100">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="GO OFFLINE FOR...">
+                  GO OFFLINE FOR...
+                </SelectItem>
+                <SelectItem value="online">Online</SelectItem>
+                <SelectItem value="offline">Offline</SelectItem>
+              </SelectContent>
+            </Select>
+          </FormRow>
         </div>
 
         {/* Edit/Save Button */}
@@ -271,57 +237,47 @@ export default function ProfileSettings({
         <div className="my-8 border-t border-gray-200"></div>
 
         {/* Account Deactivation Section */}
-        <div className="space-y-6">
-          <div className="grid grid-cols-4 items-start gap-4">
-            <Label className="text-right font-medium text-gray-700">
-              ACCOUNT DEACTIVATION
-            </Label>
-            <div className="col-span-3">
-              <Alert className="border-destructive/50 bg-destructive/5">
-                <AlertDescription className="text-sm text-gray-700">
-                  <p className="mb-2 font-semibold">
-                    What happens when you deactivate your account?
-                  </p>
-                  <ul className="space-y-1 text-gray-600">
-                    <li>
-                      • Your profile and Gigs won't be shown on Job&Me anymore.
-                    </li>
-                    <li>• Active orders will be cancelled.</li>
-                    <li>• You won't be able to re-activate your Gigs.</li>
-                  </ul>
-                </AlertDescription>
-              </Alert>
-            </div>
-          </div>
+        <div className="space-y-5">
+          <FormRow label="ACCOUNT DEACTIVATION">
+            <Alert className="border-destructive/50 bg-destructive/5">
+              <AlertDescription className="text-sm text-gray-700">
+                <p className="mb-2 font-semibold">
+                  What happens when you deactivate your account?
+                </p>
+                <ul className="space-y-1 text-gray-600">
+                  <li>
+                    • Your profile and Gigs won&apos;t be shown on Job&amp;Me
+                    anymore.
+                  </li>
+                  <li>• Active orders will be cancelled.</li>
+                  <li>• You won&apos;t be able to re-activate your Gigs.</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+          </FormRow>
 
-          {/* Deactivation Reason */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="reason" className="text-right text-gray-700">
-              I'm leaving because...
-            </Label>
-            <div className="col-span-3">
-              <Select
-                value={formData.deactivationReason}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, deactivationReason: value })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Choose a reason" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="not-satisfied">
-                    Not satisfied with service
-                  </SelectItem>
-                  <SelectItem value="too-expensive">Too expensive</SelectItem>
-                  <SelectItem value="found-alternative">
-                    Found an alternative
-                  </SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <FormRow label="I'm leaving because..." htmlFor="reason">
+            <Select
+              value={formData.deactivationReason}
+              onValueChange={(value) =>
+                setFormData({ ...formData, deactivationReason: value })
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Choose a reason" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="not-satisfied">
+                  Not satisfied with service
+                </SelectItem>
+                <SelectItem value="too-expensive">Too expensive</SelectItem>
+                <SelectItem value="found-alternative">
+                  Found an alternative
+                </SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </FormRow>
 
           {/* Deactivate Button */}
           <div className="flex justify-end">

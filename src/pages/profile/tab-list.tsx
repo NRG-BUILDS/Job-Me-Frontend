@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ExternalLink, Settings, Loader2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, Settings, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import useRequest from "@/hooks/use-request";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
@@ -18,6 +18,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+/** Page titles shown in the mobile header when inside a sub-route */
+const PAGE_TITLES: Record<string, string> = {
+  "/profile/manage": "Account",
+  "/profile/orders": "Orders",
+  "/profile/support": "Support",
+};
+
 const ProfileTabs = ({ profileData }: { profileData: any }) => {
   const isMobile = useIsMobile();
   const [firstName, setFirstName] = useState(profileData?.user?.first_name);
@@ -25,13 +32,15 @@ const ProfileTabs = ({ profileData }: { profileData: any }) => {
   const isArtisan = useSelector(
     (state: RootState) => state.auth.user?.is_artisan,
   );
-  const [email, setEmail] = useState(profileData?.user?.email);
   const [openPromoteDialog, setOpenPromoteDialog] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const { makeRequest: promoteUser, loading: isPromoting } = useRequest(
     "artisans/promote",
     true,
   );
+
+  /** On mobile, Account navigates to /profile/manage (ProfilePage).
+   *  On desktop the tabs live in the sidebar — Account highlights /profile. */
   const routes = [
     { path: isMobile ? "/profile/manage" : "/profile", label: "Account" },
     { path: "/profile/orders", label: "Orders" },
@@ -40,13 +49,14 @@ const ProfileTabs = ({ profileData }: { profileData: any }) => {
 
   const location = useLocation();
   const navigate = useNavigate();
-  console.log(location.pathname);
+
+  /** True when the user is on a sub-page (mobile only scenario) */
+  const isSubPage =
+    isMobile && Object.keys(PAGE_TITLES).includes(location.pathname);
 
   useEffect(() => {
-    console.log("profileData changed", profileData);
     setFirstName(profileData?.user?.first_name);
     setLastName(profileData?.user?.last_name);
-    setEmail(profileData?.user?.email);
     dispatch(updateUserRole({ is_artisan: profileData?.user?.is_artisan }));
   }, [profileData]);
 
@@ -65,31 +75,56 @@ const ProfileTabs = ({ profileData }: { profileData: any }) => {
     }
   };
 
+  /* ─── Mobile: sub-page back-header ─────────────────────────────────────── */
+  if (isSubPage) {
+    return (
+      <div className="border-b border-border bg-white">
+        <button
+          onClick={() => navigate("/profile", { replace: true })}
+          className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 hover:text-heading"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </button>
+        <div className="border-t border-border px-4 py-3">
+          <h2 className="text-base font-semibold text-heading">
+            {PAGE_TITLES[location.pathname]}
+          </h2>
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── Main tab list (mobile index page OR desktop sidebar) ─────────────── */
   return (
     <div className="bg-white px-4">
+      {/* Profile header */}
       <div className="flex items-center justify-between border-b border-border py-4">
         <div className="flex items-center gap-2">
           <div className="grid size-14 place-items-center rounded-full bg-dark text-lg font-extrabold text-white">
-            <p>{firstName?.[0] + lastName?.[0]}</p>
+            <p>
+              {firstName?.[0]}
+              {lastName?.[0]}
+            </p>
           </div>
           <h3 className="text-lg font-semibold">
-            {firstName + " " + lastName}
+            {firstName} {lastName}
           </h3>
         </div>
         <button className="rounded-full p-1 hover:bg-muted">
           <Settings />
         </button>
       </div>
-      <div className="grid gap-y-2 py-8">
-        {routes.map((route, index) => (
+
+      {/* Nav items */}
+      <div className="grid gap-y-1 py-4">
+        {routes.map((route) => (
           <button
             key={route.path}
-            onClick={() => {
-              navigate(route.path, { replace: true });
-            }}
-            className={`block rounded-md p-4 text-left hover:font-semibold hover:!text-heading ${
+            onClick={() => navigate(route.path, { replace: true })}
+            className={`block w-full rounded-md p-4 text-left hover:font-semibold hover:!text-heading ${
               location?.pathname === route.path
-                ? "p- cursor-default bg-muted font-bold text-heading hover:font-bold"
+                ? "cursor-default bg-muted font-bold text-heading hover:font-bold"
                 : isMobile
                   ? "text-lg font-medium shadow-elevate-01 hover:bg-primary/10"
                   : ""
@@ -98,17 +133,15 @@ const ProfileTabs = ({ profileData }: { profileData: any }) => {
             {route.label}
           </button>
         ))}
+
+        {/* Artisan Dashboard / Become an Artisan */}
         {isArtisan ? (
           <button
-            onClick={() => {
-              navigate("/artisan/dashboard", { replace: true });
-            }}
+            onClick={() => navigate("/artisan/dashboard", { replace: true })}
             className={`flex w-full items-center gap-2 rounded-md p-4 text-left hover:font-semibold hover:!text-heading ${
-              location?.pathname === "/profile/listings"
-                ? "p- cursor-default bg-muted font-bold text-heading hover:font-bold"
-                : isMobile
-                  ? "text-lg font-medium shadow-elevate-01 hover:bg-primary/10"
-                  : ""
+              isMobile
+                ? "text-lg font-medium shadow-elevate-01 hover:bg-primary/10"
+                : ""
             }`}
           >
             Artisan Dashboard
@@ -116,28 +149,23 @@ const ProfileTabs = ({ profileData }: { profileData: any }) => {
           </button>
         ) : (
           <button
-            onClick={() => {
-              setOpenPromoteDialog(true);
-            }}
-            className={`block rounded-md p-4 text-left hover:bg-primary/10 hover:font-semibold hover:text-primary ${
-              location?.pathname === "/profile/bookings"
-                ? "p- cursor-default bg-muted font-bold text-heading hover:font-bold"
-                : isMobile
-                  ? "text-lg font-medium shadow-elevate-01 hover:bg-primary/10"
-                  : ""
+            onClick={() => setOpenPromoteDialog(true)}
+            className={`block w-full rounded-md p-4 text-left hover:bg-primary/10 hover:font-semibold hover:text-primary ${
+              isMobile
+                ? "text-lg font-medium shadow-elevate-01"
+                : ""
             }`}
           >
             Become an Artisan
           </button>
         )}
-        <button
-          className="block rounded-md p-4 text-left text-destructive hover:!bg-destructive/5"
-          // onClick={handleLogoutClick}
-        >
+
+        <button className="block rounded-md p-4 text-left text-destructive hover:!bg-destructive/5">
           Logout
         </button>
       </div>
 
+      {/* Promote dialog */}
       <AlertDialog open={openPromoteDialog} onOpenChange={setOpenPromoteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

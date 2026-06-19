@@ -36,10 +36,10 @@ export default function SkillsDashboard() {
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
-      <div className="mx-auto max-w-7xl p-6">
-        <div className="grid grid-cols-12 gap-6">
-          {/* Left Sidebar */}
-          <div className="col-span-3">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          {/* Left Sidebar – hidden on mobile */}
+          <div className="hidden lg:col-span-3 lg:block">
             <div className="rounded border border-border/50 bg-white p-6">
               {/* Profile Section */}
               <div className="mb-6 flex items-center gap-4">
@@ -145,10 +145,10 @@ export default function SkillsDashboard() {
           </div>
 
           {/* Main Content */}
-          <div className="col-span-9">
+          <div className="col-span-1 lg:col-span-9">
             {/* Your Services Section */}
             <div className="mb-6 rounded border border-border/50 bg-white p-6">
-              <div className="mb-6 flex w-full items-center justify-between gap-10 border-b border-gray-200 pb-4">
+              <div className="mb-6 flex w-full flex-wrap items-start justify-between gap-4 border-b border-gray-200 pb-4">
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900">
                     Your Services
@@ -165,7 +165,7 @@ export default function SkillsDashboard() {
                 </Link>
               </div>
 
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {services?.length > 0 ? (
                   services.map((service) => (
                     <div

@@ -351,14 +351,14 @@ const CreateSkillsForm = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header with Steps */}
       {currentStep < 7 && (
-        <div className="border-b border-gray-200 bg-white px-8 py-4">
-          {/* Progress Steps */}
-          <div className="flex items-center space-x-2">
+        <div className="border-b border-gray-200 bg-white px-4 py-4 sm:px-8">
+          {/* Progress Steps – horizontally scrollable on mobile */}
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:gap-2">
             {steps.map((step, idx) => (
               <React.Fragment key={step.num}>
                 <button
                   onClick={() => goToStep(step.num)}
-                  className={`flex items-center space-x-2 rounded-lg transition-colors ${
+                  className={`flex flex-shrink-0 items-center space-x-1.5 rounded-lg transition-colors sm:space-x-2 ${
                     currentStep === step.num
                       ? "font-bold text-heading"
                       : currentStep > step.num
@@ -367,7 +367,7 @@ const CreateSkillsForm = () => {
                   }`}
                 >
                   <span
-                    className={`grid size-7 place-items-center rounded-full font-semibold ${
+                    className={`grid size-6 flex-shrink-0 place-items-center rounded-full text-xs font-semibold sm:size-7 sm:text-sm ${
                       currentStep === step.num
                         ? "bg-primary text-primary-foreground"
                         : "bg-gray-400 text-white"
@@ -375,10 +375,10 @@ const CreateSkillsForm = () => {
                   >
                     {step.num}
                   </span>
-                  <span className="text-sm">{step.label}</span>
+                  <span className="hidden text-sm sm:inline">{step.label}</span>
                 </button>
                 {idx < steps.length - 1 && (
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                  <ChevronRight className="h-3 w-3 flex-shrink-0 text-gray-400 sm:h-4 sm:w-4" />
                 )}
               </React.Fragment>
             ))}
@@ -386,16 +386,16 @@ const CreateSkillsForm = () => {
         </div>
       )}
       {/* Main Content */}
-      <div className="mx-auto grid max-w-6xl gap-4 py-10 lg:grid-cols-12">
-        <div className="lg:col-span-9">
+      <div className="mx-auto grid max-w-6xl gap-4 px-4 py-6 sm:px-6 sm:py-10 lg:grid-cols-12">
+        <div className="col-span-full lg:col-span-9">
           <div className="min-h-[500px] bg-white shadow">
             {/* Form Content */}
-            <div className="overflow-y-auto p-8">
+            <div className="overflow-y-auto p-4 sm:p-8">
               <div className="">
                 {/* Step 1: Overview */}
                 {currentStep === 1 && (
                   <div className="space-y-6">
-                    <div className="grid gap-6 lg:grid-cols-8">
+                    <div className="grid gap-4 lg:grid-cols-8 lg:gap-6">
                       <div className="space-y-2 lg:col-span-3">
                         <label className="mb-2 block font-semibold text-gray-700">
                           Service title
@@ -423,7 +423,7 @@ const CreateSkillsForm = () => {
                       </div>
                     </div>
 
-                    <div className="grid gap-6 lg:grid-cols-8">
+                    <div className="grid gap-4 lg:grid-cols-8 lg:gap-6">
                       <div className="space-y-2 lg:col-span-3">
                         <label className="mb-2 block font-semibold text-gray-700">
                           Category
@@ -434,7 +434,7 @@ const CreateSkillsForm = () => {
                         </p>
                       </div>
                       <div className="lg:col-span-5">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                           <Select
                             value={formData.category}
                             onValueChange={(value) =>
@@ -479,7 +479,7 @@ const CreateSkillsForm = () => {
                       </div>
                     </div>
 
-                    <div className="grid gap-6 lg:grid-cols-8">
+                    <div className="grid gap-4 lg:grid-cols-8 lg:gap-6">
                       <div className="lg:col-span-3">
                         <label className="mb-2 block font-semibold text-gray-700">
                           Search tags
@@ -511,19 +511,15 @@ const CreateSkillsForm = () => {
                         </p>
                       </div>
                     </div>
-                    <div className="grid gap-6 lg:grid-cols-8">
-                      <div className="lg:col-span-3"></div>
-
-                      <div className="flex items-center space-x-2 lg:col-span-5">
-                        <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-400" />
-                        <p className="text-sm text-muted-foreground">
-                          <span className="font-semibold text-orange-400">
-                            Please note:
-                          </span>{" "}
-                          Some categories require that artisans verify their
-                          skills.
-                        </p>
-                      </div>
+                    <div className="flex items-start gap-2">
+                      <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-400" />
+                      <p className="text-sm text-muted-foreground">
+                        <span className="font-semibold text-orange-400">
+                          Please note:
+                        </span>{" "}
+                        Some categories require that artisans verify their
+                        skills.
+                      </p>
                     </div>
                   </div>
                 )}
@@ -531,7 +527,7 @@ const CreateSkillsForm = () => {
                 {/* Step 2: Offerings */}
                 {currentStep === 2 && (
                   <div className="space-y-6">
-                    <div className="grid gap-6 lg:grid-cols-8">
+                    <div className="grid gap-4 lg:grid-cols-8 lg:gap-6">
                       <div className="space-y-2 lg:col-span-3">
                         <label className="mb-2 block font-semibold text-gray-700">
                           Offerings
@@ -545,7 +541,7 @@ const CreateSkillsForm = () => {
                       <div className="lg:col-span-5">
                         <div className="space-y-4">
                           {formData.offerings.map((offering, i) => (
-                            <div key={i} className="grid grid-cols-2 gap-4">
+                            <div key={i} className="grid grid-cols-2 gap-3">
                               <div className="flex items-center gap-1">
                                 <Input
                                   type="text"
@@ -593,7 +589,7 @@ const CreateSkillsForm = () => {
                 {/* Step 3: Description & FAQ */}
                 {currentStep === 3 && (
                   <div className="space-y-6">
-                    <div className="grid gap-6 lg:grid-cols-8">
+                    <div className="grid gap-4 lg:grid-cols-8 lg:gap-6">
                       <div className="space-y-2 lg:col-span-3">
                         <label className="mb-2 block font-semibold text-gray-700">
                           Description
@@ -617,7 +613,7 @@ const CreateSkillsForm = () => {
                         />
                       </div>
                     </div>
-                    <div className="grid gap-6 lg:grid-cols-8">
+                    <div className="grid gap-4 lg:grid-cols-8 lg:gap-6">
                       <div className="space-y-2 lg:col-span-3">
                         <label className="mb-2 block font-semibold text-gray-700">
                           Frequently Asked Questions (FAQs)
@@ -680,7 +676,7 @@ const CreateSkillsForm = () => {
                 {/* Step 4: Gallery */}
                 {currentStep === 4 && (
                   <div className="space-y-6">
-                    <div className="grid gap-6 lg:grid-cols-8">
+                    <div className="grid gap-4 lg:grid-cols-8 lg:gap-6">
                       <div className="space-y-2 lg:col-span-3">
                         <label className="mb-2 block font-semibold text-gray-700">
                           Gallery
@@ -788,7 +784,7 @@ const CreateSkillsForm = () => {
                 {/* Step 5: Requirements */}
                 {currentStep === 5 && (
                   <div className="space-y-6">
-                    <div className="grid gap-6 lg:grid-cols-8">
+                    <div className="grid gap-4 lg:grid-cols-8 lg:gap-6">
                       <div className="space-y-2 lg:col-span-3">
                         <label className="mb-2 block font-semibold text-gray-700">
                           Requirements
@@ -815,7 +811,7 @@ const CreateSkillsForm = () => {
                               field: "utilityBill",
                             },
                           ].map((doc, i) => (
-                            <div key={i} className="grid grid-cols-2 gap-4">
+                            <div key={i} className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                               <div className="flex items-center gap-2">
                                 <input
                                   type="file"
@@ -887,7 +883,7 @@ const CreateSkillsForm = () => {
                 {/* Step 6: Publish */}
                 {currentStep === 6 && (
                   <div className="space-y-6">
-                    <div className="grid gap-6 lg:grid-cols-8">
+                    <div className="grid gap-4 lg:grid-cols-8 lg:gap-6">
                       <div className="space-y-2 lg:col-span-3">
                         <label className="mb-2 block font-semibold text-gray-700">
                           Review & Publish
@@ -1282,12 +1278,12 @@ const CreateSkillsForm = () => {
           </div>
           {/* Navigation Buttons */}
           {currentStep < 7 && (
-            <div className="mt-4 flex justify-between">
+            <div className="mt-4 flex justify-between gap-3">
               <Button
                 onClick={prevStep}
                 disabled={currentStep === 1}
                 variant="outline"
-                className={` ${
+                className={`flex-1 sm:flex-none ${
                   currentStep === 1
                     ? "cursor-not-allowed bg-gray-100 text-gray-400 disabled:opacity-60"
                     : ""
@@ -1298,7 +1294,7 @@ const CreateSkillsForm = () => {
               <Button
                 onClick={nextStep}
                 disabled={currentStep === 6}
-                className={` ${
+                className={`flex-1 sm:flex-none ${
                   currentStep === 6
                     ? "cursor-not-allowed bg-gray-100 text-gray-400"
                     : ""
@@ -1309,7 +1305,7 @@ const CreateSkillsForm = () => {
             </div>
           )}
         </div>
-        <div className="lg:col-span-3">
+        <div className="col-span-full hidden lg:col-span-3 lg:block">
           {/* Blue Aside Section */}
           <div className="flex w-full flex-col bg-[#AFEDF7] shadow-lg">
             <div className="rounded-lg bg-white/10 p-6 backdrop-blur-sm">
