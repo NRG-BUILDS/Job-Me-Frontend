@@ -8,7 +8,7 @@ const Login = () => {
   const [tab, setTab] = useState<"customer" | "business">("customer");
   return (
     <main className="bg-secondary">
-      <div className="mx-auto flex min-h-screen w-full max-w-5xl items-center justify-between">
+      <div className="mx-auto flex min-h-screen w-full max-w-5xl items-center justify-center lg:justify-between">
         <motion.div
           initial={{ scale: 1.05, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -26,7 +26,9 @@ const Login = () => {
             </div>
           </div>
         </motion.div>
-        <div>hello</div>
+        <div className="hidden w-[38rem] justify-center lg:flex">
+          <img src="/auth_side_image.png" alt="" />
+        </div>
       </div>
     </main>
   );

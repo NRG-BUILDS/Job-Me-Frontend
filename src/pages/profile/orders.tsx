@@ -54,6 +54,7 @@ interface Order {
     title: string;
     description: string;
     artisan: string;
+    gallery?: { url: string }[];
   } | null;
   artisan: {
     _id: string;
@@ -220,6 +221,9 @@ export default function OrdersPage() {
         artisanName: order.artisan
           ? `${order.artisan.first_name} ${order.artisan.last_name}`
           : "the artisan",
+        amount: order.amount,
+        offeringTitle: order.offering?.title,
+        gallery: order.service?.gallery || [],
       },
     });
   };
