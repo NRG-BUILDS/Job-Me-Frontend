@@ -56,6 +56,10 @@ type Service = {
   reviews_count: number;
   orders_count: number;
   starting_price: number;
+  isPromoted?: boolean;
+  promotionPlan?: "3days" | "1week" | "1month" | null;
+  promotionExpiresAt?: string;
+  viewsCount?: number;
   createdAt: string;
   updatedAt: string;
   __v: number;
@@ -117,6 +121,10 @@ type ServiceDetails = {
   reviews_count: number;
   orders_count: number;
   starting_price: number;
+  isPromoted?: boolean;
+  promotionPlan?: "3days" | "1week" | "1month" | null;
+  promotionExpiresAt?: string;
+  viewsCount?: number;
   createdAt: string;
   updatedAt: string;
   __v: number;

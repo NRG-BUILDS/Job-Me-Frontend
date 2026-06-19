@@ -12,11 +12,17 @@ export const SkillCard = ({ skill }: Props) => {
   return (
     <div className="border bg-white text-sm lg:text-base">
       {/* Cover image placeholder */}
-      <div className="aspect-[4/3] w-full bg-gray-200">
+      <div className="relative aspect-[4/3] w-full bg-gray-200">
         <Image
           src={skill.gallery[0].url}
           className="size-full object-cover object-top"
         />
+        {skill.isPromoted && (
+          <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-amber-500/90 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-lg backdrop-blur-sm">
+            <Star className="size-3 fill-current" />
+            Spotlight
+          </div>
+        )}
       </div>
 
       {/* Body */}

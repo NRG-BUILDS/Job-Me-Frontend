@@ -19,6 +19,8 @@ import SkillsDashboard from "./pages/artisan/services/services-dashboard";
 import CreateSkillsForm from "./pages/artisan/services/create";
 import CategoriesPage from "./pages/categories/categories";
 import LeaveReviewPage from "./pages/profile/leave-review";
+import PromoteService from "./pages/artisan/services/promote";
+import VerifyPromotion from "./pages/artisan/services/promote-verify";
 
 const App = () => {
   return (
@@ -45,6 +47,11 @@ const App = () => {
           <Route
             path="/artisan/skills/edit/:id"
             element={<CreateSkillsForm />}
+          />
+          <Route path="/artisan/skills/promote" element={<PromoteService />} />
+          <Route
+            path="/artisan/skills/promote/verify"
+            element={<VerifyPromotion />}
           />
           <Route path="/leave-review" element={<LeaveReviewPage />} />
         </Route>

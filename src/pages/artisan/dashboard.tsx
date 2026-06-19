@@ -17,6 +17,7 @@ import {
   MoreVertical,
   ChevronRight,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import useRequest from "@/hooks/use-request";
