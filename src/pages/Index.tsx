@@ -10,7 +10,7 @@ import { Service } from "@/types/service";
 
 const Index = () => {
   const [services, setServices] = useState<Service[]>([]);
-  const { makeRequest: getServices, loading } = useRequest("services");
+  const { makeRequest: getServices, loading } = useRequest("services", false);
 
   useEffect(() => {
     const fetchServices = async () => {

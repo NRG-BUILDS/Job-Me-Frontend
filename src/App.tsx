@@ -18,6 +18,7 @@ import ArtisanBookings from "./pages/artisan/bookings";
 import SkillsDashboard from "./pages/artisan/services/services-dashboard";
 import CreateSkillsForm from "./pages/artisan/services/create";
 import CategoriesPage from "./pages/categories/categories";
+import LeaveReviewPage from "./pages/profile/leave-review";
 
 const App = () => {
   return (
@@ -45,6 +46,7 @@ const App = () => {
             path="/artisan/skills/edit/:id"
             element={<CreateSkillsForm />}
           />
+          <Route path="/leave-review" element={<LeaveReviewPage />} />
         </Route>
 
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

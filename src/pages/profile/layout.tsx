@@ -1,20 +1,10 @@
 // ChatLayout.jsx
 import { useState, useEffect } from "react";
-import {
-  Routes,
-  Route,
-  useNavigate,
-  useParams,
-  useLocation,
-} from "react-router-dom";
-import { useWebSocket } from "@/hooks/useWebSocket";
-import { RootState } from "@/store/store";
-import { useSelector } from "react-redux";
-import { LucideMessageSquareText } from "lucide-react";
+import { Routes, Route } from "react-router-dom";
+
 import ProfileTabs from "./tab-list";
 import ProfilePage from ".";
 import OrdersPage from "./orders";
-import { Button } from "@/components/ui/button";
 import useRequest from "@/hooks/use-request";
 import { CompleteProfileForm } from "@/components/profile/complete-profile-form";
 import {

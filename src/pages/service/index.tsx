@@ -462,10 +462,8 @@ const ServiceReviews = ({
       <div className="bg-white py-6 shadow-sm">
         <div className="mb-3 flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 font-medium text-white">
-              {review.reviewer.first_name[0] +
-                " " +
-                review.reviewer.last_name[0]}
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted-foreground/20 font-medium text-dark">
+              {review.reviewer.first_name[0] + review.reviewer.last_name[0]}
             </div>
             <div>
               <h4 className="font-medium text-gray-900">

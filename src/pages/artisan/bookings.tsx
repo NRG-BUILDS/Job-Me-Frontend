@@ -9,6 +9,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -31,6 +36,7 @@ import {
   AlertTriangle,
   CheckCheck,
   Ban,
+  MoreVertical,
 } from "lucide-react";
 import { formatMoney } from "@/lib/utils";
 
@@ -76,6 +82,8 @@ export default function ArtisanBookings() {
     "date-desc" | "date-asc" | "status-desc" | "status-asc"
   >("date-desc");
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isAccepting, setIsAccepting] = useState(false);
+  const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   // Track which card is being actioned (for inline card buttons)
   const [actioningId, setActioningId] = useState<string | null>(null);
@@ -90,6 +98,9 @@ export default function ArtisanBookings() {
     useRequest<any>("", true);
 
   const { makeRequest: completeOrderRequest, loading: completeLoading } =
+    useRequest<any>("", true);
+
+  const { makeRequest: acceptOrderRequest, loading: acceptLoading } =
     useRequest<any>("", true);
 
   const getOrders = async () => {
@@ -162,6 +173,7 @@ export default function ArtisanBookings() {
       if (res && res.success) {
         toast.success("Booking marked as completed");
         setIsDetailOpen(false);
+        setIsSubmittingCompletion(false);
         setSelectedOrder(null);
         setActioningId(null);
         getOrders();
@@ -173,8 +185,27 @@ export default function ArtisanBookings() {
     }
   };
 
-  const handleAcceptOrder = () => {
-    toast.success("Order accepted and is now active (mock)");
+  const handleAcceptOrder = async (order: Order) => {
+    try {
+      const res = await acceptOrderRequest(
+        {},
+        "PATCH",
+        "application/json",
+        `orders/${order._id}/accept`,
+      );
+      if (res && res.success) {
+        toast.success("Order accepted successfully");
+        setIsDetailOpen(false);
+        setIsAccepting(false);
+        setSelectedOrder(null);
+        setActioningId(null);
+        getOrders();
+      } else {
+        toast.error("Failed to accept order");
+      }
+    } catch (err: any) {
+      toast.error(err?.error || "Error accepting order");
+    }
   };
 
   const handleMessageCustomer = () => {
@@ -233,6 +264,8 @@ export default function ArtisanBookings() {
     setSelectedOrder(order);
     setIsDetailOpen(true);
     setIsCancelling(false);
+    setIsAccepting(false);
+    setIsSubmittingCompletion(false);
     setCancelReason("");
   };
 
@@ -366,72 +399,121 @@ export default function ArtisanBookings() {
                   </div>
                 </div>
 
-                {/* Inline CTA Buttons — always visible on card */}
+                {/* Primary Action Button & Context Menu Dots */}
                 <div
-                  className="flex flex-wrap gap-2 border-t border-dashed pt-3"
+                  className="flex items-center justify-between border-t border-dashed pt-3 gap-2"
                   onClick={stopProp}
                 >
-                  {/* Contact actions — always shown */}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleMessageCustomer}
-                    className="h-8 rounded-full px-3 text-xs font-semibold"
-                  >
-                    <MessageCircle size={12} className="mr-1" /> Message
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleCallCustomer}
-                    className="h-8 rounded-full px-3 text-xs font-semibold"
-                  >
-                    <PhoneCall size={12} className="mr-1" /> Call
-                  </Button>
-
-                  {/* Accept — pending only */}
-                  {order.status === "pending" && (
+                  {/* Primary CTA */}
+                  {order.status === "pending" ? (
                     <Button
                       size="sm"
-                      onClick={handleAcceptOrder}
-                      className="h-8 rounded-full bg-blue-600 px-3 text-xs font-semibold text-white hover:bg-blue-700"
-                    >
-                      Accept
-                    </Button>
-                  )}
-
-                  {/* Request Completion — active only */}
-                  {order.status === "active" && (
-                    <Button
-                      size="sm"
-                      disabled={completeLoading && actioningId === order._id}
-                      onClick={() => {
-                        setActioningId(order._id);
-                        handleCompleteOrder(order);
-                      }}
-                      className="h-8 rounded-full bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700"
-                    >
-                      <CheckCheck size={12} className="mr-1" />
-                      {completeLoading && actioningId === order._id ? "..." : "Complete"}
-                    </Button>
-                  )}
-
-                  {/* Cancel — pending or active */}
-                  {(order.status === "pending" || order.status === "active") && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
                       onClick={(e) => {
                         stopProp(e);
                         setSelectedOrder(order);
-                        setIsCancelling(true);
+                        setIsAccepting(true);
                         setIsDetailOpen(true);
                       }}
-                      className="h-8 rounded-full px-3 text-xs font-semibold"
+                      className="flex-1 h-8 rounded-full bg-blue-600 px-3 text-xs font-semibold text-white hover:bg-blue-700"
                     >
-                      <Ban size={12} className="mr-1" /> Cancel
+                      Accept Order
+                    </Button>
+                  ) : order.status === "active" ? (
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        stopProp(e);
+                        setSelectedOrder(order);
+                        setIsSubmittingCompletion(true);
+                        setIsDetailOpen(true);
+                      }}
+                      className="flex-1 h-8 rounded-full bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700"
+                    >
+                      <CheckCheck size={12} className="mr-1" />
+                      Submit Completion
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        stopProp(e);
+                        handleMessageCustomer();
+                      }}
+                      className="flex-1 h-8 rounded-full px-3 text-xs font-semibold"
+                    >
+                      <MessageCircle size={12} className="mr-1" /> Message
                     </Button>
                   )}
+
+                  {/* Dots Popover */}
+                  <Popover>
+                    <PopoverTrigger asChild onClick={stopProp}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full border border-border hover:bg-muted"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="end"
+                      side="top"
+                      sideOffset={6}
+                      className="w-48 p-1"
+                      onClick={stopProp}
+                    >
+                      {order.status === "pending" && (
+                        <button
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setIsAccepting(true);
+                            setIsDetailOpen(true);
+                          }}
+                          className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs font-semibold hover:bg-muted text-blue-700"
+                        >
+                          <CheckCircle2 size={12} /> Accept Order
+                        </button>
+                      )}
+                      {order.status === "active" && (
+                        <button
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setIsSubmittingCompletion(true);
+                            setIsDetailOpen(true);
+                          }}
+                          className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs font-semibold hover:bg-muted text-emerald-700"
+                        >
+                          <CheckCheck size={12} /> Submit Completion
+                        </button>
+                      )}
+                      {(order.status === "pending" || order.status === "active") && (
+                        <button
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setIsCancelling(true);
+                            setIsDetailOpen(true);
+                          }}
+                          className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs font-semibold hover:bg-muted text-rose-600"
+                        >
+                          <Ban size={12} /> Cancel Booking
+                        </button>
+                      )}
+                      <button
+                        onClick={handleMessageCustomer}
+                        className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs font-semibold hover:bg-muted text-dark"
+                      >
+                        <MessageCircle size={12} /> Send Message
+                      </button>
+                      <button
+                        onClick={handleCallCustomer}
+                        className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs font-semibold hover:bg-muted text-dark"
+                      >
+                        <PhoneCall size={12} /> Call Customer
+                      </button>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </CardContent>
             </Card>
@@ -442,7 +524,7 @@ export default function ArtisanBookings() {
       {/* Details Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={(open) => {
         setIsDetailOpen(open);
-        if (!open) { setIsCancelling(false); setCancelReason(""); }
+        if (!open) { setIsCancelling(false); setIsAccepting(false); setIsSubmittingCompletion(false); setCancelReason(""); }
       }}>
         <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
           {selectedOrder && (
@@ -604,14 +686,64 @@ export default function ArtisanBookings() {
                   </div>
                 )}
 
+                {/* Accept confirmation form */}
+                {isAccepting && (
+                  <div className="space-y-3 rounded-lg border border-blue-200 bg-blue-50 p-4 duration-200 animate-in fade-in-50">
+                    <h4 className="font-extrabold uppercase tracking-wider text-blue-600">
+                      Confirm Acceptance
+                    </h4>
+                    <p className="text-sm font-medium text-blue-900">
+                      Are you sure you want to accept this booking? Once accepted, you are expected to deliver the service.
+                    </p>
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setIsAccepting(false)} disabled={acceptLoading}>
+                        Back
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleAcceptOrder(selectedOrder)}
+                        disabled={acceptLoading}
+                        className="bg-blue-600 text-white hover:bg-blue-700"
+                      >
+                        {acceptLoading ? "Processing..." : "Confirm Acceptance"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Submit for Completion confirmation form */}
+                {isSubmittingCompletion && (
+                  <div className="space-y-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 duration-200 animate-in fade-in-50">
+                    <h4 className="font-extrabold uppercase tracking-wider text-emerald-700">
+                      Submit for Completion?
+                    </h4>
+                    <p className="text-sm font-medium text-emerald-900">
+                      This will notify your client that the work is complete and prompt them to mark this gig as done. Make sure everything has been delivered before sending.
+                    </p>
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setIsSubmittingCompletion(false)} disabled={completeLoading}>
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleCompleteOrder(selectedOrder)}
+                        disabled={completeLoading}
+                        className="bg-emerald-600 text-white hover:bg-emerald-700"
+                      >
+                        {completeLoading ? "Processing..." : "Yes, Notify Client"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Dialog action buttons */}
-                {!isCancelling && (
+                {!isCancelling && !isAccepting && !isSubmittingCompletion && (
                   <div className="space-y-3 border-t pt-4">
                     {/* Primary actions */}
                     <div className="flex flex-wrap gap-2">
                       {selectedOrder.status === "pending" && (
                         <Button
-                          onClick={handleAcceptOrder}
+                          onClick={() => setIsAccepting(true)}
                           className="flex-1 rounded-full bg-blue-600 font-semibold text-white hover:bg-blue-700"
                         >
                           Accept Order
@@ -619,12 +751,11 @@ export default function ArtisanBookings() {
                       )}
                       {selectedOrder.status === "active" && (
                         <Button
-                          onClick={() => handleCompleteOrder(selectedOrder)}
-                          disabled={completeLoading}
+                          onClick={() => setIsSubmittingCompletion(true)}
                           className="flex-1 rounded-full bg-emerald-600 font-semibold text-white hover:bg-emerald-700"
                         >
                           <CheckCheck size={15} className="mr-1" />
-                          {completeLoading ? "Completing..." : "Request Completion"}
+                          Submit for Completion
                         </Button>
                       )}
                       {(selectedOrder.status === "pending" || selectedOrder.status === "active") && (

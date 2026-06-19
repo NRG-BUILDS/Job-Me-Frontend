@@ -1,6 +1,6 @@
 import { Input } from "@/components/ui/input";
-import { Mail, Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { Mail, Eye, EyeOff, User, Loader2, Check, X } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const NIGERIAN_STATES = [
   "Abia",
@@ -49,6 +49,7 @@ interface AuthFormFieldsProps {
   form: {
     first_name: string;
     last_name: string;
+    username: string;
     email: string;
     password: string;
     password2: string;
@@ -66,6 +67,53 @@ export function AuthFormFields({
   const togglePasswords = () => {
     setShowPassword((prev) => !prev);
   };
+
+  const [usernameStatus, setUsernameStatus] = useState<
+    "idle" | "checking" | "available" | "taken" | "invalid"
+  >("idle");
+  const [usernameMessage, setUsernameMessage] = useState("");
+
+  useEffect(() => {
+    if (type !== "signup") return;
+
+    const username = form.username?.trim();
+    if (!username || username.length < 3) {
+      setUsernameStatus("idle");
+      setUsernameMessage("");
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]{3,50}$/.test(username)) {
+      setUsernameStatus("invalid");
+      setUsernameMessage("Only letters, numbers, and underscores allowed");
+      return;
+    }
+
+    setUsernameStatus("checking");
+    const timeoutId = setTimeout(async () => {
+      try {
+        const BASE_URL = import.meta.env.VITE_API_HOST as string;
+        const res = await fetch(`${BASE_URL}users/check-username/${username}`);
+        const data = await res.json();
+        if (res.ok) {
+          if (data.available) {
+            setUsernameStatus("available");
+            setUsernameMessage(data.message);
+          } else {
+            setUsernameStatus("taken");
+            setUsernameMessage(data.message);
+          }
+        } else {
+          setUsernameStatus("invalid");
+          setUsernameMessage(data.message || "Invalid username");
+        }
+      } catch (err) {
+        setUsernameStatus("idle");
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [form.username, type]);
 
   const isArtisan = user === "artisan";
   const isClient = user === "" || user === "client";
@@ -97,6 +145,50 @@ export function AuthFormFields({
                 required
               />
             </div>
+          </div>
+          <div className="space-y-1">
+            <div className="relative">
+              <User className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Username"
+                value={form.username || ""}
+                onChange={(e) =>
+                  setForm({ ...form, username: e.target.value.toLowerCase() })
+                }
+                className={`pr-10 ${
+                  usernameStatus === "invalid" || usernameStatus === "taken"
+                    ? "border-destructive focus-visible:ring-destructive"
+                    : usernameStatus === "available"
+                      ? "border-green-500 focus-visible:ring-green-500"
+                      : ""
+                }`}
+                required
+              />
+              <div className="absolute right-9 top-3">
+                {usernameStatus === "checking" && (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+                {usernameStatus === "available" && (
+                  <Check className="h-4 w-4 text-green-500" />
+                )}
+                {(usernameStatus === "taken" ||
+                  usernameStatus === "invalid") && (
+                  <X className="h-4 w-4 text-destructive" />
+                )}
+              </div>
+            </div>
+            {usernameMessage && (
+              <p
+                className={`text-xs ${
+                  usernameStatus === "available"
+                    ? "text-green-500"
+                    : "text-destructive"
+                }`}
+              >
+                {usernameMessage}
+              </p>
+            )}
           </div>
         </>
       )}

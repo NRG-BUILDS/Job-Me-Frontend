@@ -10,6 +10,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -33,6 +38,11 @@ import {
   ChevronRight,
   Info,
   ExternalLink,
+  MoreVertical,
+  MessageCircle,
+  PhoneCall,
+  Ban,
+  Star,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatMoney } from "@/lib/utils";
@@ -59,6 +69,7 @@ interface Order {
   };
   amount: number;
   status: "pending" | "active" | "completed" | "cancelled";
+  has_reviewed?: boolean;
   cancelled_by?: string | null;
   cancellation_reason?: string | null;
   completed_at?: string | null;
@@ -85,6 +96,7 @@ export default function OrdersPage() {
   // Cancellation form state
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
 
   const {
     data,
@@ -94,6 +106,9 @@ export default function OrdersPage() {
   } = useRequest<any>("orders/customer-history", true);
 
   const { makeRequest: cancelOrderRequest, loading: cancelLoading } =
+    useRequest<any>("", true);
+
+  const { makeRequest: completeOrderRequest, loading: completeLoading } =
     useRequest<any>("", true);
 
   const getOrders = async () => {
@@ -170,6 +185,55 @@ export default function OrdersPage() {
     }
   };
 
+  const handleCompleteOrder = async (order: Order) => {
+    try {
+      const res = await completeOrderRequest(
+        {},
+        "PATCH",
+        "application/json",
+        `orders/${order._id}/complete`,
+      );
+      if (res && res.success) {
+        toast.success(
+          "Booking marked as completed! Leave a review to share your experience.",
+        );
+        setIsDetailOpen(false);
+        setIsSubmittingCompletion(false);
+        setSelectedOrder(null);
+        getOrders();
+        // Immediately redirect to the review page
+        navigateToReview(order);
+      } else {
+        toast.error("Failed to complete order");
+      }
+    } catch (err: any) {
+      toast.error(err?.error || "Error completing order");
+    }
+  };
+
+  const navigateToReview = (order: Order) => {
+    navigate("/leave-review", {
+      state: {
+        orderId: order._id,
+        serviceId: order.service?._id,
+        serviceName: order.service?.title || "this service",
+        artisanName: order.artisan
+          ? `${order.artisan.first_name} ${order.artisan.last_name}`
+          : "the artisan",
+      },
+    });
+  };
+
+  const handleMessageArtisan = () => {
+    toast.info("Navigating to messages...");
+  };
+
+  const handleCallArtisan = () => {
+    toast.info("Opening phone dialer...");
+  };
+
+  const stopProp = (e: React.MouseEvent) => e.stopPropagation();
+
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return "N/A";
     return new Intl.DateTimeFormat("en-US", {
@@ -219,6 +283,7 @@ export default function OrdersPage() {
     setSelectedOrder(order);
     setIsDetailOpen(true);
     setIsCancelling(false);
+    setIsSubmittingCompletion(false);
     setCancelReason("");
   };
 
@@ -278,9 +343,7 @@ export default function OrdersPage() {
         {/* Sort Controls */}
         <div className="flex items-center gap-2">
           <ArrowUpDown size={14} className="text-muted-foreground" />
-          <span className="font-medium text-muted-foreground">
-            Sort by:
-          </span>
+          <span className="font-medium text-muted-foreground">Sort by:</span>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
@@ -346,7 +409,7 @@ export default function OrdersPage() {
             <Card
               key={order._id}
               onClick={() => openOrderDetails(order)}
-              className="group flex cursor-pointer flex-col justify-between border border-border bg-white shadow-sm transition-all duration-300 hover:border-dark hover:shadow-md"
+              className="group relative flex cursor-pointer flex-col justify-between border border-border bg-white shadow-sm transition-all duration-300 hover:border-dark hover:shadow-md"
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-4">
@@ -375,7 +438,7 @@ export default function OrdersPage() {
                   </span>
                 </div>
 
-                <div className="mt-auto flex items-center justify-between border-t border-dashed pt-3">
+                <div className="mt-auto flex items-center justify-between border-t border-dashed pb-2 pt-3">
                   <div className="flex flex-col">
                     <span className="font-bold uppercase text-muted-foreground">
                       Ordered On
@@ -397,6 +460,114 @@ export default function OrdersPage() {
                     </span>
                   </div>
                 </div>
+
+                {/* Primary Action Button & Context Menu Dots */}
+                <div
+                  className="flex items-center justify-between gap-2 border-t border-dashed pt-3"
+                  onClick={stopProp}
+                >
+                  {order.status === "active" ? (
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        stopProp(e);
+                        setSelectedOrder(order);
+                        setIsSubmittingCompletion(true);
+                        setIsDetailOpen(true);
+                      }}
+                      className="h-8 flex-1 rounded-full bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700"
+                    >
+                      Mark as Completed
+                    </Button>
+                  ) : order.status === "completed" && !order.has_reviewed ? (
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        stopProp(e);
+                        navigateToReview(order);
+                      }}
+                      className="h-8 flex-1 rounded-full bg-amber-500 px-3 text-xs font-semibold text-white hover:bg-amber-600"
+                    >
+                      <Star size={12} className="mr-1" /> Leave Review
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        stopProp(e);
+                        handleMessageArtisan();
+                      }}
+                      className="h-8 flex-1 rounded-full bg-primary px-3 text-xs font-semibold text-white hover:bg-primary/95"
+                    >
+                      Message Artisan
+                    </Button>
+                  )}
+
+                  <Popover>
+                    <PopoverTrigger asChild onClick={stopProp}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full border border-border hover:bg-muted"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="end"
+                      side="top"
+                      sideOffset={6}
+                      className="w-48 p-1"
+                      onClick={stopProp}
+                    >
+                      {order.status === "active" && (
+                        <button
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setIsSubmittingCompletion(true);
+                            setIsDetailOpen(true);
+                          }}
+                          className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs font-semibold text-emerald-700 hover:bg-muted"
+                        >
+                          <CheckCircle2 size={12} /> Mark Completed
+                        </button>
+                      )}
+                      {order.status === "completed" && !order.has_reviewed && (
+                        <button
+                          onClick={() => navigateToReview(order)}
+                          className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs font-semibold text-amber-600 hover:bg-muted"
+                        >
+                          <Star size={12} /> Leave Review
+                        </button>
+                      )}
+                      {(order.status === "pending" ||
+                        order.status === "active") && (
+                        <button
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setIsCancelling(true);
+                            setIsDetailOpen(true);
+                          }}
+                          className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs font-semibold text-rose-600 hover:bg-muted"
+                        >
+                          <Ban size={12} /> Cancel Booking
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleMessageArtisan()}
+                        className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs font-semibold text-dark hover:bg-muted"
+                      >
+                        <MessageCircle size={12} /> Send Message
+                      </button>
+                      <button
+                        onClick={() => handleCallArtisan()}
+                        className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs font-semibold text-dark hover:bg-muted"
+                      >
+                        <PhoneCall size={12} /> Call Artisan
+                      </button>
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -404,7 +575,17 @@ export default function OrdersPage() {
       )}
 
       {/* Details Dialog */}
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+      <Dialog
+        open={isDetailOpen}
+        onOpenChange={(open) => {
+          setIsDetailOpen(open);
+          if (!open) {
+            setIsCancelling(false);
+            setIsSubmittingCompletion(false);
+            setCancelReason("");
+          }
+        }}
+      >
         <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
           {selectedOrder && (
             <>
@@ -447,17 +628,13 @@ export default function OrdersPage() {
                       <p className="font-bold text-dark">
                         {selectedOrder.offering?.title}
                       </p>
-                      <p className="text-muted-foreground">
-                        Chosen Tier
-                      </p>
+                      <p className="text-muted-foreground">Chosen Tier</p>
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-extrabold text-primary">
                         {formatMoney(selectedOrder.amount)}
                       </p>
-                      <p className="text-muted-foreground">
-                        Total Price
-                      </p>
+                      <p className="text-muted-foreground">Total Price</p>
                     </div>
                   </div>
                   {selectedOrder.service?.description && (
@@ -590,7 +767,7 @@ export default function OrdersPage() {
                         onClick={() => setIsCancelling(false)}
                         disabled={cancelLoading}
                       >
-                        Cancel
+                        Back
                       </Button>
                       <Button
                         size="sm"
@@ -605,31 +782,107 @@ export default function OrdersPage() {
                     </div>
                   </div>
                 )}
-              </div>
 
-              <DialogFooter className="gap-2 sm:gap-0">
-                {!isCancelling && (
-                  <>
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsDetailOpen(false)}
-                      className="rounded-full font-semibold"
-                    >
-                      Close
-                    </Button>
-                    {(selectedOrder.status === "pending" ||
-                      selectedOrder.status === "active") && (
+                {/* Submit for Completion confirmation form */}
+                {isSubmittingCompletion && (
+                  <div className="space-y-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 duration-200 animate-in fade-in-50">
+                    <h4 className="font-extrabold uppercase tracking-wider text-emerald-700">
+                      Mark as Completed?
+                    </h4>
+                    <p className="text-sm font-medium text-emerald-900">
+                      Are you sure you want to mark this booking as completed?
+                      This confirms that the artisan has successfully delivered
+                      the requested service.
+                    </p>
+                    <div className="flex justify-end gap-2">
                       <Button
-                        variant="destructive"
-                        onClick={() => setIsCancelling(true)}
-                        className="rounded-full font-semibold"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setIsSubmittingCompletion(false)}
+                        disabled={completeLoading}
                       >
-                        Cancel Booking
+                        Back
                       </Button>
-                    )}
-                  </>
+                      <Button
+                        size="sm"
+                        onClick={() => handleCompleteOrder(selectedOrder)}
+                        disabled={completeLoading}
+                        className="bg-emerald-600 text-white hover:bg-emerald-700"
+                      >
+                        {completeLoading ? "Processing..." : "Yes, Complete"}
+                      </Button>
+                    </div>
+                  </div>
                 )}
-              </DialogFooter>
+
+                {/* Dialog action buttons */}
+                {!isCancelling && !isSubmittingCompletion && (
+                  <div className="space-y-3 border-t pt-4">
+                    {/* Primary actions */}
+                    <div className="flex flex-wrap gap-2">
+                      {selectedOrder.status === "active" && (
+                        <Button
+                          onClick={() => setIsSubmittingCompletion(true)}
+                          className="flex-1 rounded-full bg-emerald-600 font-semibold text-white hover:bg-emerald-700"
+                        >
+                          <CheckCircle2 size={15} className="mr-1" />
+                          Mark as Completed
+                        </Button>
+                      )}
+                      {selectedOrder.status === "completed" &&
+                        !selectedOrder.has_reviewed && (
+                          <Button
+                            onClick={() => {
+                              setIsDetailOpen(false);
+                              navigateToReview(selectedOrder);
+                            }}
+                            className="flex-1 rounded-full bg-amber-500 font-semibold text-white hover:bg-amber-600"
+                          >
+                            <Star size={15} className="mr-1" /> Leave a Review
+                          </Button>
+                        )}
+                      {(selectedOrder.status === "pending" ||
+                        selectedOrder.status === "active") && (
+                        <Button
+                          variant="destructive"
+                          onClick={() => setIsCancelling(true)}
+                          className="flex-1 rounded-full font-semibold"
+                        >
+                          <Ban size={15} className="mr-1" /> Cancel Booking
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Secondary actions */}
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={handleMessageArtisan}
+                        className="flex-1 rounded-full font-semibold"
+                      >
+                        <MessageCircle size={14} className="mr-1.5" /> Message
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleCallArtisan}
+                        className="flex-1 rounded-full font-semibold"
+                      >
+                        <PhoneCall size={14} className="mr-1.5" /> Call
+                      </Button>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsDetailOpen(false)}
+                        className="w-full rounded-full font-semibold sm:w-auto"
+                      >
+                        Close
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </>
           )}
         </DialogContent>

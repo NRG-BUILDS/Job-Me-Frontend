@@ -19,11 +19,13 @@ interface PopularCategory {
 
 const Hero = () => {
   const [searchInput, setSearchInput] = useState("");
-  const [popularCategories, setPopularCategories] = useState<PopularCategory[]>([]);
+  const [popularCategories, setPopularCategories] = useState<PopularCategory[]>(
+    [],
+  );
   const navigate = useNavigate();
 
   const { makeRequest: fetchPopularCategories, loading: loadingCategories } =
-    useRequest("categories/popular");
+    useRequest("categories/popular", false);
 
   useEffect(() => {
     const getPopular = async () => {
@@ -80,19 +82,17 @@ const Hero = () => {
         </div>
         <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-2">
           <p>Popular:</p>
-          {loadingCategories ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-9 w-24 rounded-full" />
-            ))
-          ) : (
-            popularCategories.slice(0, 5).map((category) => (
-              <Link key={category._id} to={`/categories/${category.slug}`}>
-                <button className="grid place-items-center whitespace-nowrap rounded-full border border-dark px-4 py-1 text-lg hover:border-primary hover:text-primary">
-                  {category.name}
-                </button>
-              </Link>
-            ))
-          )}
+          {loadingCategories
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-9 w-24 rounded-full" />
+              ))
+            : popularCategories.slice(0, 5).map((category) => (
+                <Link key={category._id} to={`/categories/${category.slug}`}>
+                  <button className="grid place-items-center whitespace-nowrap rounded-full border border-dark px-4 py-1 text-lg hover:border-primary hover:text-primary">
+                    {category.name}
+                  </button>
+                </Link>
+              ))}
           <Link to={"/categories"}>
             <button className="flex place-items-center whitespace-nowrap rounded-full border border-secondary bg-secondary px-4 py-1 text-lg font-medium text-heading">
               More Categories

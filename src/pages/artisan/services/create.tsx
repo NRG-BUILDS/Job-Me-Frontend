@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { ChevronRight, Play, Info, Trash2, Upload, Loader2 } from "lucide-react";
+import {
+  ChevronRight,
+  Play,
+  Info,
+  Trash2,
+  Upload,
+  Loader2,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -21,10 +28,13 @@ const CreateSkillsForm = () => {
   const isEditMode = Boolean(id);
   const navigate = useNavigate();
 
-  const { makeRequest: fetchService, loading: fetchLoading } = useRequest(`services/${id}`, true);
+  const { makeRequest: fetchService, loading: fetchLoading } = useRequest(
+    `services/service/${id}`,
+    true,
+  );
   const { makeRequest: saveService, loading: saveLoading } = useRequest(
     isEditMode ? `services/update-service/${id}` : "services/create-service",
-    true
+    true,
   );
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -70,7 +80,9 @@ const CreateSkillsForm = () => {
     utilityBill: null,
   });
 
-  const selectedCategoryObj = categories.find((c) => c.id === formData.category);
+  const selectedCategoryObj = categories.find(
+    (c) => c.id === formData.category,
+  );
   const subcategories = selectedCategoryObj?.subcategories || [];
 
   useEffect(() => {
@@ -88,10 +100,11 @@ const CreateSkillsForm = () => {
               category: s.category?._id || s.category || "",
               subcategory: s.subcategory || "",
               searchTags: s.search_tags?.join(", ") || "",
-              offerings: s.offerings?.map((o: any) => ({
-                title: o.title,
-                price: String(o.price),
-              })) || [],
+              offerings:
+                s.offerings?.map((o: any) => ({
+                  title: o.title,
+                  price: String(o.price),
+                })) || [],
               description: s.description || "",
               faq: s.faq || [],
               gallery: s.gallery || [],
@@ -104,7 +117,8 @@ const CreateSkillsForm = () => {
             });
             setExistingVerificationDocs({
               ninSlip: s.verification_docs?.nin_slip || null,
-              proofOfMembership: s.verification_docs?.proof_of_membership || null,
+              proofOfMembership:
+                s.verification_docs?.proof_of_membership || null,
               utilityBill: s.verification_docs?.utility_bill || null,
             });
           }
@@ -226,7 +240,9 @@ const CreateSkillsForm = () => {
       toast.error("At least one offering is required");
       return;
     }
-    const invalidOffering = formData.offerings.find((o) => !o.title.trim() || !o.price.trim() || isNaN(Number(o.price)));
+    const invalidOffering = formData.offerings.find(
+      (o) => !o.title.trim() || !o.price.trim() || isNaN(Number(o.price)),
+    );
     if (invalidOffering) {
       toast.error("All offerings must have a title and a valid price");
       return;
@@ -239,17 +255,24 @@ const CreateSkillsForm = () => {
         .filter(Boolean);
 
       const newFiles = formData.gallery.filter((item) => item instanceof File);
-      const existingGallery = formData.gallery.filter((item) => !(item instanceof File));
+      const existingGallery = formData.gallery.filter(
+        (item) => !(item instanceof File),
+      );
 
       const fd = new FormData();
       fd.append("title", formData.serviceTitle);
       fd.append("category", formData.category);
       fd.append("subcategory", formData.subcategory || "");
       fd.append("description", formData.description);
-      fd.append("offerings", JSON.stringify(formData.offerings.map((o) => ({
-        title: o.title,
-        price: Number(o.price) || 0,
-      }))));
+      fd.append(
+        "offerings",
+        JSON.stringify(
+          formData.offerings.map((o) => ({
+            title: o.title,
+            price: Number(o.price) || 0,
+          })),
+        ),
+      );
       fd.append("faq", JSON.stringify(formData.faq));
       fd.append("search_tags", JSON.stringify(searchTagsArray));
       fd.append("gallery", JSON.stringify(existingGallery));
@@ -273,16 +296,27 @@ const CreateSkillsForm = () => {
         fd.append("nin_slip", formData.requirements.ninSlip);
       }
       if (formData.requirements.proofOfMembership instanceof File) {
-        fd.append("proof_of_membership", formData.requirements.proofOfMembership);
+        fd.append(
+          "proof_of_membership",
+          formData.requirements.proofOfMembership,
+        );
       }
       if (formData.requirements.utilityBill instanceof File) {
         fd.append("utility_bill", formData.requirements.utilityBill);
       }
 
-      const res = await saveService(fd, isEditMode ? "PATCH" : "POST", "multipart/form-data");
-      
+      const res = await saveService(
+        fd,
+        isEditMode ? "PATCH" : "POST",
+        "multipart/form-data",
+      );
+
       if (res && res.status >= 200 && res.status < 300) {
-        toast.success(isEditMode ? "Service updated successfully" : "Service published successfully");
+        toast.success(
+          isEditMode
+            ? "Service updated successfully"
+            : "Service published successfully",
+        );
         setCurrentStep(7);
       } else {
         toast.error(res?.message || "Failed to save service");
@@ -688,45 +722,55 @@ const CreateSkillsForm = () => {
                           <div className="mt-4 grid grid-cols-3 gap-4">
                             {formData.gallery.map((file, i) => {
                               const isNewFile = file instanceof File;
-                              const isImage = isNewFile 
-                                ? file.type.startsWith("image/") 
-                                : file.media_type === "image" || (file.url && !file.url.endsWith(".mp4"));
-                              
+                              const isImage = isNewFile
+                                ? file.type.startsWith("image/")
+                                : file.media_type === "image" ||
+                                  (file.url && !file.url.endsWith(".mp4"));
+
                               return (
                                 <div key={i} className="group relative">
-                                  <div className="aspect-square overflow-hidden rounded-lg bg-gray-100 border flex items-center justify-center">
+                                  <div className="flex aspect-square items-center justify-center overflow-hidden rounded-lg border bg-gray-100">
                                     {isNewFile ? (
                                       isImage ? (
                                         <img
                                           src={URL.createObjectURL(file)}
                                           alt="Preview"
                                           className="h-full w-full object-cover"
-                                          onLoad={(e) => URL.revokeObjectURL((e.target as any).src)}
+                                          onLoad={(e) =>
+                                            URL.revokeObjectURL(
+                                              (e.target as any).src,
+                                            )
+                                          }
                                         />
                                       ) : (
                                         <div className="flex flex-col items-center justify-center p-2 text-center">
-                                          <Play className="h-6 w-6 text-gray-400 mb-1" />
-                                          <p className="truncate text-xs max-w-full px-1">{file.name}</p>
+                                          <Play className="mb-1 h-6 w-6 text-gray-400" />
+                                          <p className="max-w-full truncate px-1 text-xs">
+                                            {file.name}
+                                          </p>
                                         </div>
                                       )
+                                    ) : isImage ? (
+                                      <img
+                                        src={file.url}
+                                        alt="Existing gallery"
+                                        className="h-full w-full object-cover"
+                                      />
                                     ) : (
-                                      isImage ? (
-                                        <img
-                                          src={file.url}
-                                          alt="Existing gallery"
-                                          className="h-full w-full object-cover"
+                                      <div className="flex flex-col items-center justify-center p-2 text-center">
+                                        <Play
+                                          className="mb-1 h-6 w-6 text-gray-400"
+                                          fill="currentColor"
                                         />
-                                      ) : (
-                                        <div className="flex flex-col items-center justify-center p-2 text-center">
-                                          <Play className="h-6 w-6 text-gray-400 mb-1" fill="currentColor" />
-                                          <p className="truncate text-[10px] text-gray-500">Video clip</p>
-                                        </div>
-                                      )
+                                        <p className="truncate text-[10px] text-gray-500">
+                                          Video clip
+                                        </p>
+                                      </div>
                                     )}
                                   </div>
                                   <button
                                     onClick={() => removeGalleryItem(i)}
-                                    className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 shadow"
+                                    className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white opacity-0 shadow transition-opacity group-hover:opacity-100"
                                     type="button"
                                   >
                                     <Trash2 size={12} />
@@ -789,16 +833,23 @@ const CreateSkillsForm = () => {
                                     type="text"
                                     className="w-full cursor-pointer"
                                     placeholder="NO FILE CHOSEN"
-                                    value={
-                                      (() => {
-                                        const reqVal = formData.requirements[doc.field as keyof typeof formData.requirements];
-                                        return (reqVal instanceof File ? reqVal.name : "") ||
-                                          (existingVerificationDocs[doc.field as keyof typeof existingVerificationDocs]
-                                            ? "Uploaded document (click to change)"
-                                            : "") ||
-                                          "NO FILE CHOSEN";
-                                      })()
-                                    }
+                                    value={(() => {
+                                      const reqVal =
+                                        formData.requirements[
+                                          doc.field as keyof typeof formData.requirements
+                                        ];
+                                      return (
+                                        (reqVal instanceof File
+                                          ? reqVal.name
+                                          : "") ||
+                                        (existingVerificationDocs[
+                                          doc.field as keyof typeof existingVerificationDocs
+                                        ]
+                                          ? "Uploaded document (click to change)"
+                                          : "") ||
+                                        "NO FILE CHOSEN"
+                                      );
+                                    })()}
                                     readOnly
                                   />
                                 </label>
@@ -972,7 +1023,9 @@ const CreateSkillsForm = () => {
                                 </span>
                                 <span className="col-span-2 text-gray-600">
                                   {formData.requirements.ninSlip?.name ||
-                                    (existingVerificationDocs.ninSlip ? "Existing document loaded" : "") ||
+                                    (existingVerificationDocs.ninSlip
+                                      ? "Existing document loaded"
+                                      : "") ||
                                     "Not uploaded"}
                                 </span>
                               </div>
@@ -981,8 +1034,11 @@ const CreateSkillsForm = () => {
                                   Membership Proof:
                                 </span>
                                 <span className="col-span-2 text-gray-600">
-                                  {formData.requirements.proofOfMembership?.name ||
-                                    (existingVerificationDocs.proofOfMembership ? "Existing document loaded" : "") ||
+                                  {formData.requirements.proofOfMembership
+                                    ?.name ||
+                                    (existingVerificationDocs.proofOfMembership
+                                      ? "Existing document loaded"
+                                      : "") ||
                                     "Not uploaded"}
                                 </span>
                               </div>
@@ -992,7 +1048,9 @@ const CreateSkillsForm = () => {
                                 </span>
                                 <span className="col-span-2 text-gray-600">
                                   {formData.requirements.utilityBill?.name ||
-                                    (existingVerificationDocs.utilityBill ? "Existing document loaded" : "") ||
+                                    (existingVerificationDocs.utilityBill
+                                      ? "Existing document loaded"
+                                      : "") ||
                                     "Not uploaded"}
                                 </span>
                               </div>
@@ -1009,17 +1067,21 @@ const CreateSkillsForm = () => {
                           </div>
 
                           <Button
-                            className="w-full rounded-lg bg-green-500 py-6 text-base font-semibold text-white transition-colors hover:bg-green-600 flex items-center justify-center gap-2"
+                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-500 py-6 text-base font-semibold text-white transition-colors hover:bg-green-600"
                             onClick={handleSubmit}
                             disabled={saveLoading}
                           >
                             {saveLoading ? (
                               <>
                                 <Loader2 className="h-5 w-5 animate-spin" />
-                                {isEditMode ? "Saving Changes..." : "Publishing Service..."}
+                                {isEditMode
+                                  ? "Saving Changes..."
+                                  : "Publishing Service..."}
                               </>
+                            ) : isEditMode ? (
+                              "Save Changes"
                             ) : (
-                              isEditMode ? "Save Changes" : "Publish Service"
+                              "Publish Service"
                             )}
                           </Button>
                         </div>
@@ -1197,16 +1259,18 @@ const CreateSkillsForm = () => {
                     </div>
                     <div className="mx-auto max-w-lg pb-10">
                       <h2 className="text-4xl font-bold">
-                        {isEditMode ? "Your changes are saved." : "Your service is under review."}
+                        {isEditMode
+                          ? "Your changes are saved."
+                          : "Your service is under review."}
                       </h2>
-                      <p className="mt-2 text-sm mb-6 text-gray-500">
-                        {isEditMode 
-                          ? "We are currently reviewing your updated service details. You can track its status in your dashboard." 
+                      <p className="mb-6 mt-2 text-sm text-gray-500">
+                        {isEditMode
+                          ? "We are currently reviewing your updated service details. You can track its status in your dashboard."
                           : "We are still reviewing your service. We will notify you when our review is complete and your service is ready to publish. Good job."}
                       </p>
-                      <Button 
+                      <Button
                         onClick={() => navigate("/artisan/skills")}
-                        className="bg-primary hover:bg-primary/95 text-white font-semibold py-2 px-6 rounded-lg transition-all"
+                        className="rounded-lg bg-primary px-6 py-2 font-semibold text-white transition-all hover:bg-primary/95"
                       >
                         Go to Dashboard
                       </Button>
