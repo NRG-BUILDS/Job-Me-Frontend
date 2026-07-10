@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Settings, Wrench } from "lucide-react";
+import { Plus, Settings, Wrench, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import useRequest from "@/hooks/use-request";
 import { Service } from "@/types/service";
@@ -203,15 +203,25 @@ export default function SkillsDashboard() {
                         </p>
                       </div>
 
-                      {/* Edit Button */}
-                      <Link to={`/artisan/skills/edit/${service._id}`}>
-                        <Button
-                          variant="outline"
-                          className="w-full border-link text-link hover:bg-link/5"
-                        >
-                          Edit Service
-                        </Button>
-                      </Link>
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <Link to={`/artisan/skills/edit/${service._id}`} className="flex-1">
+                          <Button
+                            variant="outline"
+                            className="w-full border-link text-link hover:bg-link/5"
+                          >
+                            Edit
+                          </Button>
+                        </Link>
+                        <Link to={`/artisan/skills/promote?serviceId=${service._id}`} className="flex-1">
+                          <Button
+                            className="w-full bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center gap-1 font-semibold"
+                          >
+                            <Sparkles className="h-4 w-4 fill-current" />
+                            Boost
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                   ))
                 ) : (

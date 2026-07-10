@@ -215,6 +215,84 @@ export default function ArtisanDashboard() {
           </div>
         </div>
 
+        {/* Spotlight Promotions Widget */}
+        <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-amber-500 fill-current" />
+                Spotlight Promotions
+              </h3>
+              <p className="text-sm text-gray-500">
+                Track your active service boosts and visitor engagement.
+              </p>
+            </div>
+            <Link to="/artisan/skills/promote">
+              <Button className="bg-primary text-white hover:bg-primary/95 text-xs font-semibold py-1.5 h-auto rounded-full px-4">
+                ★ Promote a Skill
+              </Button>
+            </Link>
+          </div>
+
+          {dashboardData?.promotedServices && dashboardData.promotedServices.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {dashboardData.promotedServices.map((service: any) => {
+                const expiresAt = new Date(service.promotionExpiresAt);
+                const diffTime = expiresAt.getTime() - Date.now();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                let planColor = "bg-amber-100 text-amber-800 border-amber-200";
+                let planLabel = "Quick Spark";
+                if (service.promotionPlan === "1week") {
+                  planColor = "bg-emerald-100 text-emerald-800 border-emerald-200";
+                  planLabel = "Growth Surge";
+                } else if (service.promotionPlan === "1month") {
+                  planColor = "bg-indigo-100 text-indigo-800 border-indigo-200";
+                  planLabel = "Apex Spotlight";
+                }
+
+                return (
+                  <div key={service._id} className="rounded-xl border border-gray-150 p-4 bg-gray-50/50 hover:bg-gray-50 transition-colors flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start gap-2 mb-2">
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${planColor}`}>
+                          {planLabel}
+                        </span>
+                        <span className="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                          👁 {service.viewsCount || 0} views
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-gray-900 text-sm line-clamp-1 mb-1">
+                        {service.title}
+                      </h4>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                      <span className="text-gray-500 font-medium">
+                        {diffDays > 0 ? `${diffDays} days remaining` : "Expiring soon"}
+                      </span>
+                      <Link to={`/artisan/skills/promote?serviceId=${service._id}`} className="text-primary font-bold hover:underline">
+                        Extend Boost
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="rounded-xl border-2 border-dashed border-gray-200 p-8 text-center bg-gray-50/20">
+              <p className="text-sm text-gray-600 mb-3 font-medium">
+                No active spotlight promotions. Boost your services to stand out in searches and get highlighted on the home page.
+              </p>
+              <Link to="/artisan/skills/promote">
+                <Button variant="outline" className="text-xs font-semibold rounded-full border-gray-300">
+                  Boost Your Visibility Now
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+
         {/* Activity Section */}
         <div className="rounded-lg border border-gray-200 bg-white p-6">
           {/* Filters */}
