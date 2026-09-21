@@ -186,12 +186,16 @@ const ServicePage = () => {
           <div className="relative w-full">
             <Carousel
               setApi={setApi}
-              className="aspect-video w-full overflow-clip lg:rounded-xl"
+              className="aspect-[4/3] h-full w-full overflow-clip lg:rounded-xl"
             >
               <CarouselContent>
                 {service.gallery.map((image, index) => (
                   <CarouselItem key={index}>
-                    <Image src={image.url} alt="Hairdresser" />
+                    <Image
+                      src={image.url}
+                      alt="Hairdresser"
+                      className="h-full object-cover"
+                    />
                   </CarouselItem>
                 ))}
               </CarouselContent>
@@ -330,7 +334,7 @@ const ServicePage = () => {
           </section>
         </div>
         <div className="w-full items-start justify-end space-y-5 px-4 lg:col-span-5 lg:flex lg:p-0">
-          <section className="sticky top-10 w-full max-w-[415px] space-y-6 border border-border text-lg">
+          <section className="sticky top-36 w-full max-w-[415px] space-y-6 border border-border text-lg">
             <div className="grid grid-cols-3 divide-x border-b border-border bg-muted font-bold">
               <div className="size-full bg-white p-5 py-3 text-primary hover:bg-muted">
                 Offerings
